@@ -1,0 +1,19 @@
+{
+  "name": "dtou-demo",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n shell,app-a,app-b,app-c -c cyan,yellow,green,red \"npm run dev -w apps/demo-shell\" \"npm run dev -w apps/app-a-journal\" \"npm run dev -w apps/app-b-insights\" \"npm run dev -w apps/app-c-marketplace\"",
+    "dev:shell": "npm run dev -w apps/demo-shell",
+    "dev:app-a": "npm run dev -w apps/app-a-journal",
+    "dev:app-b": "npm run dev -w apps/app-b-insights",
+    "dev:app-c": "npm run dev -w apps/app-c-marketplace",
+    "build:all": "npm run build --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

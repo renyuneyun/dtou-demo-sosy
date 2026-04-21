@@ -1,0 +1,7 @@
+@prefix ex:  <http://example.org/health#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<#r> a ex:SleepRecord ;
+     ex:durationHours "6.5"^^xsd:decimal ;
+     ex:qualityScore 71 ;
+     ex:date "2024-03-02"^^xsd:date .

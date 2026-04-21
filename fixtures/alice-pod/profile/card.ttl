@@ -1,0 +1,8 @@
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix solid: <http://www.w3.org/ns/solid/terms#> .
+
+<#me>
+  a foaf:Person ;
+  foaf:name "Alice Demo" ;
+  foaf:mbox <mailto:alice@example.org> ;
+  solid:oidcIssuer <http://localhost:3000/> .

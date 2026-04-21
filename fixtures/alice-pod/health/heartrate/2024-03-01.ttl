@@ -1,0 +1,9 @@
+@prefix ex:  <http://example.org/health#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<#r1> a ex:HeartRateMeasurement ; ex:bpm 72 ;
+      ex:timestamp "2024-03-01T08:00:00Z"^^xsd:dateTime .
+<#r2> a ex:HeartRateMeasurement ; ex:bpm 68 ;
+      ex:timestamp "2024-03-01T12:00:00Z"^^xsd:dateTime .
+<#r3> a ex:HeartRateMeasurement ; ex:bpm 75 ;
+      ex:timestamp "2024-03-01T20:00:00Z"^^xsd:dateTime .
