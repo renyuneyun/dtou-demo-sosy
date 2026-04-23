@@ -4,7 +4,7 @@ import PolicyPanel from './components/PolicyPanel.vue';
 import ConflictCard from './components/ConflictCard.vue';
 import { APP_C_POLICY } from './policy';
 
-const { loading, dataPolicies, compatibility } = useHealthData();
+const { loading, error, dataPolicies, compatibility } = useHealthData();
 </script>
 
 <template>
@@ -23,6 +23,11 @@ const { loading, dataPolicies, compatibility } = useHealthData();
       />
 
       <div v-if="loading" class="text-center py-8 text-rose-700">Checking policy…</div>
+
+      <div v-if="error && !loading"
+           class="bg-yellow-50 border border-yellow-300 rounded-lg p-4 text-yellow-800 text-sm">
+        <strong>Policy check failed:</strong> {{ error }}
+      </div>
 
       <div v-if="compatibility && !compatibility.compatible"
            class="bg-red-50 border-2 border-red-400 rounded-lg p-6 space-y-4">

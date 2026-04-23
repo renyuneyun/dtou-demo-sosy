@@ -1,5 +1,6 @@
+import { Parser } from 'n3';
 import { serializeAppPolicy } from './policy.js';
-import type { AppPolicy, CompatibilityResult } from './types.js';
+import type { AppPolicy, CompatibilityResult, Conflict, ConflictType } from './types.js';
 import { SOLID_SERVER, MOCK_MODE } from './config.js';
 import { getMockCompatibility } from './mock.js';
 
@@ -60,31 +61,71 @@ export async function checkPolicy(
 }
 
 /**
- * Parse the server's reasoning result.
+ * Parse the server's reasoning result Turtle into a CompatibilityResult.
  *
- * TODO: The exact response format (JSON-LD, Turtle, plain JSON) must be
- * verified against the actual server implementation at
- * https://github.com/renyuneyun/solid-dtou before this function can be
- * finalized. The current implementation attempts JSON first, then falls back
- * to heuristic Turtle inspection.
+ * The server returns Turtle with conflict triples using urn:dtou:core# namespace.
+ * We parse it with N3 to extract distinct conflict subjects and their types.
  */
 function parseServerResult(body: string): CompatibilityResult {
+  const DTOU = 'urn:dtou:core#';
+  const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+  const CONFLICT_TYPES: ConflictType[] = ['ProhibitedUse', 'UnmatchedExpectation', 'UnsatisfiedRequirement'];
+
   try {
-    const json = JSON.parse(body);
+    const parser = new Parser();
+    const quads = parser.parse(body);
+
+    // Collect type(s) and properties for each conflict subject
+    const subjectTypes = new Map<string, Set<string>>();
+    const subjectProps = new Map<string, Map<string, string>>();
+
+    for (const q of quads) {
+      const s = q.subject.value;
+      if (q.predicate.value === RDF_TYPE) {
+        if (!subjectTypes.has(s)) subjectTypes.set(s, new Set());
+        subjectTypes.get(s)!.add(q.object.value);
+      } else {
+        if (!subjectProps.has(s)) subjectProps.set(s, new Map());
+        subjectProps.get(s)!.set(q.predicate.value, q.object.value);
+      }
+    }
+
+    const conflicts: Conflict[] = [];
+    for (const [subj, types] of subjectTypes) {
+      if (!types.has(`${DTOU}Conflict`)) continue;
+      const conflictType = CONFLICT_TYPES.find(t => types.has(`${DTOU}${t}`));
+      if (!conflictType) continue;
+      const props = subjectProps.get(subj) ?? new Map();
+      const descriptor = props.get(`${DTOU}descriptor`) ?? '';
+      const port = props.get(`${DTOU}port`) ?? '';
+      let detail = '';
+      if (conflictType === 'ProhibitedUse') {
+        detail = 'Alice\'s data policy prohibits use for commercial research (any app).';
+      } else if (conflictType === 'UnmatchedExpectation') {
+        const concept = descriptor.split(/[#/]/).pop() ?? descriptor;
+        const portName = port.split(/[#/]/).pop() ?? port;
+        detail = `No Purpose Tagging for "${concept}" found${portName ? ` (port: ${portName})` : ''}.`;
+      } else {
+        detail = `Conflict: ${conflictType}`;
+      }
+      conflicts.push({ type: conflictType, detail });
+    }
+
+    const compatible = conflicts.length === 0;
     return {
-      compatible: json.compatible ?? true,
-      conflicts: json.conflicts ?? [],
-      activatedObligations: json.activatedObligations ?? [],
-      summary: json.summary ?? (json.compatible ? 'Compatible.' : 'Conflicts detected.'),
+      compatible,
+      conflicts,
+      activatedObligations: [],
+      summary: compatible ? 'Compatible.' : `${conflicts.length} conflict(s) detected.`,
     };
   } catch {
-    // If not JSON, inspect for conflict indicators in Turtle
-    const hasConflict = body.includes(':Conflict') || body.includes(':ProhibitedUse') ||
-      body.includes(':UnmatchedExpectation') || body.includes(':UnsatisfiedRequirement');
+    // Fallback: heuristic inspection if Turtle parsing fails
+    const hasConflict = body.includes('Conflict') || body.includes('ProhibitedUse') ||
+      body.includes('UnmatchedExpectation');
     return {
       compatible: !hasConflict,
       conflicts: hasConflict
-        ? [{ type: 'ProhibitedUse', detail: 'Server reported a conflict (raw response).' }]
+        ? [{ type: 'ProhibitedUse', detail: 'Server reported conflicts (see raw response).' }]
         : [],
       activatedObligations: [],
       summary: hasConflict ? 'Conflicts detected.' : 'Compatible.',

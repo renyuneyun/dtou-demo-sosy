@@ -1,0 +1,44 @@
+@prefix dtou: <urn:dtou:core#>.
+@prefix demo: <http://example.org/dtou-demo#>.
+
+# ── Data resource declaration ─────────────────────────────────────────────────
+# dtou:uri must match the InputSpec's dtou:data value in the app policy.
+# All three apps use the container URL, so the policy is container-scoped.
+
+demo:data-heartrate a dtou:Data ;
+    dtou:uri <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:policy demo:health-data-policy .
+
+# ── Attribute ─────────────────────────────────────────────────────────────────
+# Holds the concept class that the PurposeTag exposes.
+# dtou:class must match the dtou:descriptor on the app's PurposeExpectation.
+
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class <urn:dtou-demo:purpose-health-suggestions> ;
+    dtou:value <urn:dtou-demo:nil> .
+
+# ── Purpose Tagging ───────────────────────────────────────────────────────────
+# Marks this data as suitable for "provide health suggestions".
+# Apps A and B declare this purpose → their PurposeExpectation finds a match
+# → no UnmatchedExpectation fires for them.
+
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
+
+# ── Prohibition ───────────────────────────────────────────────────────────────
+# Blocks any app that declares the commercial-research purpose (dtou:app omitted
+# → applies to all apps).  App C declares this purpose → ProhibitedUse fires.
+
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose <urn:dtou-demo:purpose-commercial-research>
+    ] .
+
+# ── Data Policy ───────────────────────────────────────────────────────────────
+
+demo:health-data-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .

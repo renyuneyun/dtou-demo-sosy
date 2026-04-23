@@ -124,7 +124,13 @@ for subdir in heartrate steps sleep; do
   done
   for f in "$POD/health/$subdir/"*.dtou; do
     fname="$(basename "$f")"
-    upload "$f" "/alice/health/$subdir/$fname"
+    # container.dtou is the container-level policy; it must be served at ".dtou"
+    # (the server appends .dtou to the container URL to locate the policy).
+    if [ "$fname" = "container.dtou" ]; then
+      upload "$f" "/alice/health/$subdir/.dtou"
+    else
+      upload "$f" "/alice/health/$subdir/$fname"
+    fi
   done
 done
 
