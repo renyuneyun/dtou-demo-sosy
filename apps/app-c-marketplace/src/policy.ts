@@ -7,7 +7,7 @@ import {
   CONCEPT_COMMERCIAL_RESEARCH,
 } from '@dtou-demo/dtou-client';
 
-const APP = 'http://example.org/app#';
+const APP = 'urn:dtou-demo:app#';
 const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
 export const APP_C_POLICY: AppPolicy = {
@@ -61,7 +61,7 @@ export const APP_C_POLICY: AppPolicy = {
         {
           type: 'Delete',
           filter: {
-            name: 'http://example.org/dtou-demo#health-data-personal',
+            name: 'urn:dtou-demo:vocab#health-data-personal',
             cls: 'personal',
             value: 'nil',
           },

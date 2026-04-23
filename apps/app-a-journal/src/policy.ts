@@ -5,7 +5,7 @@ import {
   CONCEPT_HEALTH_SUGGESTIONS,
 } from '@dtou-demo/dtou-client';
 
-const APP = 'http://example.org/app#';
+const APP = 'urn:dtou-demo:app#';
 const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
 export const APP_A_POLICY: AppPolicy = {

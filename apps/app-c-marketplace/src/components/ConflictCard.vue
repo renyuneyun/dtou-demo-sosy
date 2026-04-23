@@ -14,10 +14,10 @@ const props = defineProps<{ conflict: Conflict }>();
 
     <div v-if="props.conflict.type === 'ProhibitedUse'" class="text-xs space-y-1">
       <p class="font-semibold text-gray-600">Activation condition:</p>
-      <pre class="bg-slate-900 text-slate-100 rounded p-3 overflow-x-auto leading-relaxed">:activation_condition [
-    :purpose vocab:commercial-research
+      <pre class="bg-slate-900 text-slate-100 rounded p-3 overflow-x-auto leading-relaxed">dtou:activation_condition [
+    dtou:purpose vocab:commercial-research
 ] .
-<span class="text-yellow-400"># :app omitted — matches any app</span></pre>
+<span class="text-yellow-400"># dtou:app omitted — matches any app</span></pre>
       <p class="text-gray-500 italic">
         Alice blocked this <em>purpose</em>, not this specific app by name.
         Any app declaring <code class="bg-gray-100 px-1 rounded">vocab:commercial-research</code>

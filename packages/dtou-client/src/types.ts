@@ -6,8 +6,8 @@ export interface Port {
 }
 
 export interface PurposeExpectation {
-  uri: string;    // resource IRI (shared vocab, e.g. vocab:provide-health-suggestions)
-  name: string;   // :name — shared concept URI (e.g. urn:dtou-demo:purpose-health-suggestions)
+  uri: string;    // resource IRI (shared vocab, e.g. urn:dtou-demo:vocab#purpose-health-suggestions)
+  name: string;   // dtou:descriptor — shared concept URI (e.g. urn:dtou-demo:vocab#health-suggestions)
 }
 
 export interface SecurityProvide {

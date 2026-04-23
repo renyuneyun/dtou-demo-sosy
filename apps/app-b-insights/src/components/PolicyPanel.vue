@@ -45,8 +45,9 @@ const props = defineProps<{
               </td>
               <td class="p-1.5 border border-gray-200">{{ input.port.name }}</td>
               <td class="p-1.5 border border-gray-200">
-                <span v-for="p in input.purposes" :key="p.uri" class="block font-mono text-blue-700">
-                  {{ p.name }}
+                <span v-for="p in input.purposes" :key="p.uri" class="block font-mono text-blue-700"
+                      :title="p.name">
+                  {{ p.name.split(/[#/]/).pop() }}
                 </span>
               </td>
             </tr>

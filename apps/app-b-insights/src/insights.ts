@@ -38,17 +38,17 @@ export function generateInsights(
 
 /** Serialize the report as Turtle for saving to the Pod */
 export function reportToTurtle(report: InsightsReport): string {
-  return `@prefix ex:  <http://example.org/health#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+  return `@prefix health: <urn:dtou-demo:health#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
 
 <#report>
-  a ex:HealthInsightsReport ;
-  ex:avgHeartRate ${report.avgHeartRate} ;
-  ex:avgSteps ${report.avgSteps} ;
-  ex:totalSteps ${report.totalSteps} ;
-  ex:avgSleepHours "${report.avgSleepHours}"^^xsd:decimal ;
-  ex:avgSleepQuality ${report.avgSleepQuality} ;
-  ex:narrative """${report.narrative}""" ;
-  ex:generatedAt "${report.generatedAt}"^^xsd:dateTime .
+  a health:InsightsReport ;
+  health:avgHeartRate ${report.avgHeartRate} ;
+  health:avgSteps ${report.avgSteps} ;
+  health:totalSteps ${report.totalSteps} ;
+  health:avgSleepHours "${report.avgSleepHours}"^^xsd:decimal ;
+  health:avgSleepQuality ${report.avgSleepQuality} ;
+  health:narrative """${report.narrative}""" ;
+  health:generatedAt "${report.generatedAt}"^^xsd:dateTime .
 `;
 }

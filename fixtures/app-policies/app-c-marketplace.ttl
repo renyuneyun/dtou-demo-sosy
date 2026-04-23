@@ -1,62 +1,63 @@
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
-@prefix app:   <http://example.org/app#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
+@prefix app:   <urn:dtou-demo:app#> .
 
 # ── Ports ───────────────────────────────────────────────────────────────────
-app:port-c-hr     a :Port ; :name "heartRateInput" .
-app:port-c-steps  a :Port ; :name "stepsInput" .
-app:port-c-sleep  a :Port ; :name "sleepInput" .
-app:port-c-out    a :Port ; :name "aggregatedOutput" .
+app:port-c-hr     a dtou:Port ; dtou:name "heartRateInput" .
+app:port-c-steps  a dtou:Port ; dtou:name "stepsInput" .
+app:port-c-sleep  a dtou:Port ; dtou:name "sleepInput" .
+app:port-c-out    a dtou:Port ; dtou:name "aggregatedOutput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
 # App C declares BOTH purposes:
-# - vocab:provide-health-suggestions: Alice has a matching Tag → passes that check
+# - vocab:health-suggestions: Alice has a matching Tag → passes that check
 # - vocab:commercial-research: Alice has NO matching Tag (UnmatchedExpectation)
 #                              AND Alice has a Prohibition (ProhibitedUse)
 # Both conflicts fire for the commercial-research purpose.
 
-app:c-purpose-health a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
+app:c-purpose-health a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:health-suggestions .
 
-app:c-purpose-commercial a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-commercial-research> .
+app:c-purpose-commercial a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:commercial-research .
 
 # ── Input specs ──────────────────────────────────────────────────────────────
-app:c-input-hr a :InputSpec ;
-    :data <http://localhost:3000/alice/health/heartrate/> ;
-    :port app:port-c-hr ;
-    :purpose app:c-purpose-health, app:c-purpose-commercial .
+app:c-input-hr a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:port app:port-c-hr ;
+    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
 
-app:c-input-steps a :InputSpec ;
-    :data <http://localhost:3000/alice/health/steps/> ;
-    :port app:port-c-steps ;
-    :purpose app:c-purpose-health, app:c-purpose-commercial .
+app:c-input-steps a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/steps/> ;
+    dtou:port app:port-c-steps ;
+    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
 
-app:c-input-sleep a :InputSpec ;
-    :data <http://localhost:3000/alice/health/sleep/> ;
-    :port app:port-c-sleep ;
-    :purpose app:c-purpose-health, app:c-purpose-commercial .
+app:c-input-sleep a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/sleep/> ;
+    dtou:port app:port-c-sleep ;
+    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
 
 # ── Output spec ───────────────────────────────────────────────────────────────
 # Aggregated dataset sent to external commercial service.
-# :refinement :re-c-delete-personal removes the personal-ownership attribute
-# before forwarding (simulating that the data is stripped of Alice's identity
-# before commercial use — but it is still prohibited by Alice's policy).
+# dtou:refinement deletes the personal-ownership attribute before forwarding
+# (simulating that the data is stripped of Alice's identity before commercial
+# use — but it is still prohibited by Alice's policy).
 
-app:re-c-delete-personal a :Delete ;
-    :filter [
-        :name  <http://example.org/dtou-demo#health-data-personal> ;
-        :class :personal ;
-        :value :nil
+app:c-output-aggregate a dtou:OutputSpec ;
+    dtou:port app:port-c-out ;
+    dtou:from app:port-c-hr, app:port-c-steps, app:port-c-sleep ;
+    dtou:refinement [
+        a dtou:Delete ;
+        dtou:filter [
+            a dtou:Filter ;
+            dtou:name  vocab:health-data-personal ;
+            dtou:class dtou:personal ;
+            dtou:value vocab:nil
+        ]
     ] .
 
-app:c-output-aggregate a :OutputSpec ;
-    :port app:port-c-out ;
-    :from app:port-c-hr, app:port-c-steps, app:port-c-sleep ;
-    :refinement app:re-c-delete-personal .
-
 # ── App policy ───────────────────────────────────────────────────────────────
-app:HealthShareProPolicy a :AppPolicy ;
-    :name app:HealthSharePro ;
-    :input_spec app:c-input-hr, app:c-input-steps, app:c-input-sleep ;
-    :output_spec app:c-output-aggregate .
+app:HealthShareProPolicy a dtou:AppPolicy ;
+    dtou:name app:HealthSharePro ;
+    dtou:input_spec app:c-input-hr, app:c-input-steps, app:c-input-sleep ;
+    dtou:output_spec app:c-output-aggregate .

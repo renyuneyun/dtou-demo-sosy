@@ -1,41 +1,31 @@
-@prefix :      <http://example.org/ns#> .
-@prefix demo:  <http://example.org/dtou-demo#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix demo:  <urn:dtou-demo:> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
 # ── Attribute ────────────────────────────────────────────────────────────────
-# Information holder for the "provide health suggestions" purpose concept.
-# :class value becomes the Purpose Tagging's :name (TagName = AttributeClass).
-# This is what the PurposeExpectation :name on the app side must match.
+# dtou:class must match dtou:descriptor on the app's PurposeExpectation.
 
-demo:attr-health-suggest a :Attribute ;
-    :name  demo:health-suggest-id ;
-    :class <urn:dtou-demo:purpose-health-suggestions> ;
-    :value :nil .
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class vocab:health-suggestions ;
+    dtou:value vocab:nil .
 
 # ── Purpose Tagging ──────────────────────────────────────────────────────────
-# Tags this data as suitable for "provide health suggestions" use.
-# Apps that :purpose vocab:provide-health-suggestions will find this Tagging.
-# UnmatchedExpectation does NOT fire for those apps.
 
-demo:tagging-health-suggest a :Purpose ;
-    :attribute_ref demo:attr-health-suggest .
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
 
 # ── Prohibition ──────────────────────────────────────────────────────────────
-# Block ANY app from using this data for commercial research.
-# :app is omitted → matches any app, regardless of its name.
-# Combined with the absent commercial-research Tagging, App C gets both:
-#   - UnmatchedExpectation (no such Tagging on data)
-#   - ProhibitedUse (active prohibition)
 
-demo:prohibition-commercial a :Prohibition ;
-    :mode :Use ;
-    :activation_condition [
-        :purpose vocab:commercial-research
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose vocab:commercial-research
     ] .
 
 # ── Data Policy ──────────────────────────────────────────────────────────────
 
-demo:health-data-policy a :DataPolicy ;
-    :attribute   demo:attr-health-suggest ;
-    :tag         demo:tagging-health-suggest ;
-    :prohibition demo:prohibition-commercial .
+demo:health-data-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .

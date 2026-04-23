@@ -1,45 +1,45 @@
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
-@prefix app:   <http://example.org/app#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
+@prefix app:   <urn:dtou-demo:app#> .
 
 # ── Ports ───────────────────────────────────────────────────────────────────
-app:port-b-hr     a :Port ; :name "heartRateInput" .
-app:port-b-steps  a :Port ; :name "stepsInput" .
-app:port-b-sleep  a :Port ; :name "sleepInput" .
-app:port-b-out    a :Port ; :name "insightsOutput" .
+app:port-b-hr     a dtou:Port ; dtou:name "heartRateInput" .
+app:port-b-steps  a dtou:Port ; dtou:name "stepsInput" .
+app:port-b-sleep  a dtou:Port ; dtou:name "sleepInput" .
+app:port-b-out    a dtou:Port ; dtou:name "insightsOutput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
-app:b-purpose-personal a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
+app:b-purpose-personal a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:health-suggestions .
 
 # ── Input specs ──────────────────────────────────────────────────────────────
-app:b-input-hr a :InputSpec ;
-    :data <http://localhost:3000/alice/health/heartrate/> ;
-    :port app:port-b-hr ;
-    :purpose app:b-purpose-personal .
+app:b-input-hr a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:port app:port-b-hr ;
+    dtou:purpose app:b-purpose-personal .
 
-app:b-input-steps a :InputSpec ;
-    :data <http://localhost:3000/alice/health/steps/> ;
-    :port app:port-b-steps ;
-    :purpose app:b-purpose-personal .
+app:b-input-steps a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/steps/> ;
+    dtou:port app:port-b-steps ;
+    dtou:purpose app:b-purpose-personal .
 
-app:b-input-sleep a :InputSpec ;
-    :data <http://localhost:3000/alice/health/sleep/> ;
-    :port app:port-b-sleep ;
-    :purpose app:b-purpose-personal .
+app:b-input-sleep a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/sleep/> ;
+    dtou:port app:port-b-sleep ;
+    dtou:purpose app:b-purpose-personal .
 
 # ── Output spec ───────────────────────────────────────────────────────────────
 # The insights report derives from all three input ports.
-# No :refinement → all policy attributes from the input policies are inherited.
+# No dtou:refinement → all policy attributes from the input policies are inherited.
 # The DToU reasoner will derive output attributes/tags/obligations/prohibitions
 # from the combined input data policies via the OutputAttribute/OutputTagging rules.
 
-app:b-output-insights a :OutputSpec ;
-    :port app:port-b-out ;
-    :from app:port-b-hr, app:port-b-steps, app:port-b-sleep .
+app:b-output-insights a dtou:OutputSpec ;
+    dtou:port app:port-b-out ;
+    dtou:from app:port-b-hr, app:port-b-steps, app:port-b-sleep .
 
 # ── App policy ───────────────────────────────────────────────────────────────
-app:HealthInsightsPolicy a :AppPolicy ;
-    :name app:HealthInsights ;
-    :input_spec app:b-input-hr, app:b-input-steps, app:b-input-sleep ;
-    :output_spec app:b-output-insights .
+app:HealthInsightsPolicy a dtou:AppPolicy ;
+    dtou:name app:HealthInsights ;
+    dtou:input_spec app:b-input-hr, app:b-input-steps, app:b-input-sleep ;
+    dtou:output_spec app:b-output-insights .

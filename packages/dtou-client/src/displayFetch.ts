@@ -1,28 +1,28 @@
 import type { DataPolicyDisplay } from './types.js';
 import { MOCK_MODE } from './config.js';
 
-const MOCK_DTOU_TURTLE = `@prefix :      <http://example.org/ns#> .
-@prefix demo:  <http://example.org/dtou-demo#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+const MOCK_DTOU_TURTLE = `@prefix dtou:  <urn:dtou:core#> .
+@prefix demo:  <urn:dtou-demo:> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
-demo:attr-health-suggest a :Attribute ;
-    :name  demo:health-suggest-id ;
-    :class <urn:dtou-demo:purpose-health-suggestions> ;
-    :value :nil .
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class vocab:health-suggestions ;
+    dtou:value vocab:nil .
 
-demo:tagging-health-suggest a :Purpose ;
-    :attribute_ref demo:attr-health-suggest .
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
 
-demo:prohibition-commercial a :Prohibition ;
-    :mode :Use ;
-    :activation_condition [
-        :purpose vocab:commercial-research
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose vocab:commercial-research
     ] .
 
-demo:health-data-policy a :DataPolicy ;
-    :attribute   demo:attr-health-suggest ;
-    :tag         demo:tagging-health-suggest ;
-    :prohibition demo:prohibition-commercial .`;
+demo:health-data-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .`;
 
 /**
  * Fetch a .dtou file for UI display purposes only.

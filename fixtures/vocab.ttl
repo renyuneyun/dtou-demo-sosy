@@ -1,17 +1,19 @@
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
 # ── PurposeExpectation resources ─────────────────────────────────────────────
 
 # "Provide personalised health suggestions to the user"
-# Alice's data HAS a Purpose Tagging with this :name.
+# Alice's data HAS a Purpose Tagging with dtou:class = vocab:health-suggestions.
 # Apps declaring this purpose: tag expectation passes, not prohibited → allowed.
-vocab:provide-health-suggestions a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
+vocab:purpose-health-suggestions a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:health-suggestions .
 
 # "Commercial research — aggregate and share data with a commercial third party"
-# Alice's data does NOT have a Purpose Tagging with this :name (UnmatchedExpectation).
-# Alice also prohibits this purpose (ProhibitedUse).
+# Alice's data does NOT have a Purpose Tagging with dtou:class = vocab:commercial-research
+#   → UnmatchedExpectation fires.
+# Alice also prohibits this purpose (dtou:activation_condition dtou:purpose vocab:commercial-research)
+#   → ProhibitedUse fires.
 # An app declaring this purpose gets both conflicts.
-vocab:commercial-research a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-commercial-research> .
+vocab:purpose-commercial-research a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:commercial-research .

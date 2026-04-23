@@ -5,7 +5,7 @@ const { namedNode, literal, blankNode } = DataFactory;
 
 // The canonical DToU core namespace used by the reasoning rules and server.
 const DTOU = 'urn:dtou:core#';
-const APP  = 'http://example.org/app#';
+const APP  = 'urn:dtou-demo:app#';
 
 const rdfType = namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
 
@@ -15,12 +15,10 @@ function n(iri: string) { return namedNode(iri); }
  * Serialize an AppPolicy to Turtle using the urn:dtou:core# vocabulary,
  * which is the namespace expected by the solid-dtou reasoning rules.
  *
- * Changes from the original (http://example.org/ns#) version:
- *  - All DToU types/predicates use urn:dtou:core# namespace
- *  - PurposeExpectation concept emitted as dtou:descriptor (not dtou:name)
- *  - SecurityProvide concept emitted as dtou:descriptor (not dtou:name)
- *  - Refinement filter is a separate dtou:Filter blank node linked via dtou:filter
- *  - DownstreamSpec uses dtou:app_name (not dtou:app)
+ * Namespaces used in the serialized Turtle:
+ *  - DToU core: urn:dtou:core#  (types, predicates)
+ *  - App nodes:  urn:dtou-demo:app#  (ports, InputSpec, AppPolicy, etc.)
+ *  - Concepts:   urn:dtou-demo:vocab#  (dtou:descriptor values, must match data policy dtou:class)
  */
 export function serializeAppPolicy(policy: AppPolicy): string {
   let turtle = '';
