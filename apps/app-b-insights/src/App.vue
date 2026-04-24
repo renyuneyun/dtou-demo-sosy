@@ -7,13 +7,20 @@ import PolicyPanel from './components/PolicyPanel.vue';
 import InsightsCard from './components/InsightsCard.vue';
 import OutputPolicyBadge from './components/OutputPolicyBadge.vue';
 import { APP_B_POLICY } from './policy';
+import type { CompatibilityResult } from '@dtou-demo/dtou-client';
 
-const { loading, error, dataPolicies, compatibility, data } = useHealthData();
+const { data, error, loadData } = useHealthData();
+const compatibility = ref<CompatibilityResult | null>(null);
 
 const report = ref<InsightsReport | null>(null);
 const generating = ref(false);
 const saved = ref(false);
 const savedUrls = ref({ reportUrl: '', policyUrl: '' });
+
+function onResult(result: CompatibilityResult) {
+  compatibility.value = result;
+  if (result.compatible) loadData();
+}
 
 function handleGenerate() {
   if (!data.value) return;
@@ -38,17 +45,11 @@ async function handleSave() {
     </header>
 
     <main class="max-w-3xl mx-auto px-4 py-6 space-y-6">
-      <PolicyPanel
-        :app-policy="APP_B_POLICY"
-        :data-policies="dataPolicies"
-        :result="compatibility"
-        :loading="loading"
-      />
+      <PolicyPanel :app-policy="APP_B_POLICY" @result="onResult" />
 
-      <div v-if="loading" class="text-center py-8 text-green-700">Checking policy…</div>
       <div v-if="error" class="text-red-600 p-4 bg-red-50 rounded">{{ error }}</div>
 
-      <div v-if="compatibility?.compatible">
+      <div v-if="data">
         <button
           @click="handleGenerate"
           :disabled="generating"

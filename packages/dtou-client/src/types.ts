@@ -83,4 +83,5 @@ export interface CompatibilityResult {
 export interface DataPolicyDisplay {
   resourceUrl: string;
   raw: string;           // raw Turtle text shown in the UI
+  status: number;        // HTTP status code of the fetch
 }

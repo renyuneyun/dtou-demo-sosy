@@ -1,11 +1,5 @@
-import { ref, onMounted } from 'vue';
-import {
-  checkPolicy,
-  fetchDataPolicyForDisplay,
-  MOCK_MODE,
-} from '@dtou-demo/dtou-client';
-import type { DataPolicyDisplay, CompatibilityResult } from '@dtou-demo/dtou-client';
-import { APP_B_POLICY } from '../policy';
+import { ref } from 'vue';
+import { MOCK_MODE } from '@dtou-demo/dtou-client';
 
 export interface HeartRateRecord { time: string; bpm: number; }
 export interface StepsRecord { date: string; steps: number; }
@@ -33,32 +27,18 @@ const MOCK_DATA: HealthData = {
 };
 
 export function useHealthData() {
-  const loading = ref(true);
-  const error = ref<string | null>(null);
-  const dataPolicies = ref<DataPolicyDisplay[]>([]);
-  const compatibility = ref<CompatibilityResult | null>(null);
   const data = ref<HealthData | null>(null);
+  const error = ref<string | null>(null);
 
-  onMounted(async () => {
+  async function loadData() {
     try {
-      compatibility.value = await checkPolicy(APP_B_POLICY);
-
-      const display = await fetchDataPolicyForDisplay(
-        'http://localhost:3000/alice/health/heartrate/2024-03-01.ttl',
-      );
-      dataPolicies.value = [display];
-
-      if (compatibility.value.compatible) {
-        data.value = MOCK_MODE ? MOCK_DATA : await fetchRealHealthData();
-      }
+      data.value = MOCK_MODE ? MOCK_DATA : await fetchRealHealthData();
     } catch (e: any) {
       error.value = e.message ?? 'Unknown error';
-    } finally {
-      loading.value = false;
     }
-  });
+  }
 
-  return { loading, error, dataPolicies, compatibility, data };
+  return { data, error, loadData };
 }
 
 async function fetchRealHealthData(): Promise<HealthData> {

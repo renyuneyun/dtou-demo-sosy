@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useHealthData } from './composables/useHealthData';
+import { ref } from 'vue';
 import PolicyPanel from './components/PolicyPanel.vue';
 import ConflictCard from './components/ConflictCard.vue';
 import { APP_C_POLICY } from './policy';
+import type { CompatibilityResult } from '@dtou-demo/dtou-client';
 
-const { loading, error, dataPolicies, compatibility } = useHealthData();
+const compatibility = ref<CompatibilityResult | null>(null);
 </script>
 
 <template>
@@ -15,19 +16,7 @@ const { loading, error, dataPolicies, compatibility } = useHealthData();
     </header>
 
     <main class="max-w-3xl mx-auto px-4 py-6 space-y-6">
-      <PolicyPanel
-        :app-policy="APP_C_POLICY"
-        :data-policies="dataPolicies"
-        :result="compatibility"
-        :loading="loading"
-      />
-
-      <div v-if="loading" class="text-center py-8 text-rose-700">Checking policy…</div>
-
-      <div v-if="error && !loading"
-           class="bg-yellow-50 border border-yellow-300 rounded-lg p-4 text-yellow-800 text-sm">
-        <strong>Policy check failed:</strong> {{ error }}
-      </div>
+      <PolicyPanel :app-policy="APP_C_POLICY" @result="compatibility = $event" />
 
       <div v-if="compatibility && !compatibility.compatible"
            class="bg-red-50 border-2 border-red-400 rounded-lg p-6 space-y-4">

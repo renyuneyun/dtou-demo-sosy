@@ -1,11 +1,5 @@
-import { ref, onMounted } from 'vue';
-import {
-  checkPolicy,
-  fetchDataPolicyForDisplay,
-  MOCK_MODE,
-} from '@dtou-demo/dtou-client';
-import type { DataPolicyDisplay, CompatibilityResult } from '@dtou-demo/dtou-client';
-import { APP_A_POLICY } from '../policy';
+import { ref } from 'vue';
+import { MOCK_MODE } from '@dtou-demo/dtou-client';
 
 export interface HeartRateRecord { time: string; bpm: number; }
 export interface StepsRecord { date: string; steps: number; }
@@ -33,37 +27,18 @@ const MOCK_DATA: HealthData = {
 };
 
 export function useHealthData() {
-  const loading = ref(true);
-  const error = ref<string | null>(null);
-  // Fetched for UI display only — not part of the reasoning flow
-  const dataPolicies = ref<DataPolicyDisplay[]>([]);
-  const compatibility = ref<CompatibilityResult | null>(null);
   const data = ref<HealthData | null>(null);
+  const error = ref<string | null>(null);
 
-  onMounted(async () => {
+  async function loadData() {
     try {
-      // Step 1: Submit app policy to the DToU server.
-      // The server fetches data policies, runs N3 reasoning, and returns the result.
-      compatibility.value = await checkPolicy(APP_A_POLICY);
-
-      // Step 2 (display only): Fetch one .dtou file to show Alice's policy in the UI.
-      const display = await fetchDataPolicyForDisplay(
-        'http://localhost:3000/alice/health/heartrate/2024-03-01.ttl',
-      );
-      dataPolicies.value = [display];
-
-      // Step 3: Only fetch actual health data if the policy check passed.
-      if (compatibility.value.compatible) {
-        data.value = MOCK_MODE ? MOCK_DATA : await fetchRealHealthData();
-      }
+      data.value = MOCK_MODE ? MOCK_DATA : await fetchRealHealthData();
     } catch (e: any) {
       error.value = e.message ?? 'Unknown error';
-    } finally {
-      loading.value = false;
     }
-  });
+  }
 
-  return { loading, error, dataPolicies, compatibility, data };
+  return { data, error, loadData };
 }
 
 async function fetchRealHealthData(): Promise<HealthData> {

@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/policy.ts","./src/vite-env.d.ts","./src/vue-shim.d.ts","./src/composables/usehealthdata.ts","./src/app.vue","./src/components/datepicker.vue","./src/components/healthcontextsidebar.vue","./src/components/policypanel.vue"],"version":"5.9.3"}

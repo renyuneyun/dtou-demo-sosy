@@ -5,6 +5,7 @@ import PolicyPanel from './components/PolicyPanel.vue';
 import HealthContextSidebar from './components/HealthContextSidebar.vue';
 import DatePicker from './components/DatePicker.vue';
 import { APP_A_POLICY } from './policy';
+import type { CompatibilityResult } from '@dtou-demo/dtou-client';
 
 const MOCK_JOURNAL: Record<string, string> = {
   '2024-03-01':
@@ -13,8 +14,14 @@ const MOCK_JOURNAL: Record<string, string> = {
     'Long day of meetings. Skipped lunch, probably why energy was low. Need to plan better tomorrow.',
 };
 
-const { loading, error, dataPolicies, compatibility, data } = useHealthData();
+const { data, error, loadData } = useHealthData();
+const compatibility = ref<CompatibilityResult | null>(null);
 const selectedDate = ref('2024-03-01');
+
+function onResult(result: CompatibilityResult) {
+  compatibility.value = result;
+  if (result.compatible) loadData();
+}
 </script>
 
 <template>
@@ -25,14 +32,8 @@ const selectedDate = ref('2024-03-01');
     </header>
 
     <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      <PolicyPanel
-        :app-policy="APP_A_POLICY"
-        :data-policies="dataPolicies"
-        :result="compatibility"
-        :loading="loading"
-      />
+      <PolicyPanel :app-policy="APP_A_POLICY" @result="onResult" />
 
-      <div v-if="loading" class="text-center py-12 text-amber-700">Checking data policy…</div>
       <div v-if="error" class="text-red-600 p-4 bg-red-50 rounded">{{ error }}</div>
 
       <div v-if="compatibility && !compatibility.compatible"

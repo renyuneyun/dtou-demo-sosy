@@ -1,0 +1,1 @@
+{"root":["./src/apps.ts","./src/main.ts","./src/vite-env.d.ts","./src/vue-shim.d.ts","./src/app.vue","./src/components/appcard.vue","./src/components/comparisontable.vue","./src/components/datapolicyviewer.vue","./src/components/explainersection.vue","./src/components/scenariosection.vue"],"version":"5.9.3"}

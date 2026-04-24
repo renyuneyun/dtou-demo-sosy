@@ -1,0 +1,1 @@
+{"root":["./src/insights.ts","./src/main.ts","./src/podwriter.ts","./src/policy.ts","./src/vite-env.d.ts","./src/vue-shim.d.ts","./src/composables/usehealthdata.ts","./src/app.vue","./src/components/insightscard.vue","./src/components/outputpolicybadge.vue","./src/components/policypanel.vue"],"version":"5.9.3"}

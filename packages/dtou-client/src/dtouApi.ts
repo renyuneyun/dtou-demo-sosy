@@ -61,6 +61,61 @@ export async function checkPolicy(
 }
 
 /**
+ * Step 1 of the step-by-step reasoning flow.
+ * Submits the app policy to the DToU service via POST /dtou.
+ * Returns the serialized Turtle that was sent (for display).
+ */
+export async function submitAppPolicy(
+  policy: AppPolicy,
+  accessToken?: string,
+): Promise<{ turtle: string; status: number }> {
+  const turtle = serializeAppPolicy(policy);
+  if (MOCK_MODE) {
+    await new Promise<void>(r => setTimeout(r, 150));
+    return { turtle, status: 200 };
+  }
+  const res = await fetch(`${SOLID_SERVER}/dtou`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: JSON.stringify({ policy: turtle }),
+  });
+  if (!res.ok) throw new Error(`DToU server returned ${res.status}: ${await res.text()}`);
+  return { turtle, status: res.status };
+}
+
+/**
+ * Step 3 of the step-by-step reasoning flow.
+ * Fetches the reasoning result via GET /dtou/compliance.
+ * Must be called after submitAppPolicy().
+ * Returns the raw Turtle body and the parsed CompatibilityResult.
+ */
+export async function fetchComplianceResult(
+  policy: AppPolicy,
+  accessToken?: string,
+): Promise<{ raw: string; result: CompatibilityResult; status: number }> {
+  if (MOCK_MODE) {
+    await new Promise<void>(r => setTimeout(r, 200));
+    const result = getMockCompatibility(policy.appNameUri);
+    const mockRaw = result.compatible
+      ? `# Reasoning complete — no conflicts detected.\n# Policy: ${policy.appNameUri}`
+      : result.conflicts.map(c => `# ${c.type}: ${c.detail}`).join('\n');
+    return { raw: mockRaw, result, status: 200 };
+  }
+  const res = await fetch(`${SOLID_SERVER}/dtou/compliance`, {
+    method: 'GET',
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error(`DToU server returned ${res.status}: ${await res.text()}`);
+  const raw = await res.text();
+  return { raw, result: parseServerResult(raw), status: res.status };
+}
+
+/**
  * Parse the server's reasoning result Turtle into a CompatibilityResult.
  *
  * The server returns Turtle with conflict triples using urn:dtou:core# namespace.

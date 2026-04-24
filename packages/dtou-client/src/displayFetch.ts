@@ -33,15 +33,15 @@ export async function fetchDataPolicyForDisplay(
   resourceUrl: string,
 ): Promise<DataPolicyDisplay> {
   if (MOCK_MODE) {
-    return { resourceUrl, raw: MOCK_DTOU_TURTLE };
+    return { resourceUrl, raw: MOCK_DTOU_TURTLE, status: 200 };
   }
 
   const policyUrl = `${resourceUrl}.dtou`;
   try {
     const res = await fetch(policyUrl, { headers: { Accept: 'text/turtle' } });
     const raw = res.ok ? await res.text() : `# Could not fetch: ${policyUrl}`;
-    return { resourceUrl, raw };
+    return { resourceUrl, raw, status: res.status };
   } catch {
-    return { resourceUrl, raw: `# Could not fetch: ${policyUrl}` };
+    return { resourceUrl, raw: `# Could not fetch: ${policyUrl}`, status: 0 };
   }
 }
