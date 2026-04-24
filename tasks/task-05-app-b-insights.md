@@ -19,55 +19,54 @@ constraints as Alice's original health data. No extra setup needed."
 ### Turtle (`fixtures/app-policies/app-b-insights.ttl`)
 
 ```turtle
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
-@prefix app:   <http://example.org/app#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
+@prefix app:   <urn:dtou-demo:app#> .
 
 # ── Ports ───────────────────────────────────────────────────────────────────
-app:port-b-hr     a :Port ; :name "heartRateInput" .
-app:port-b-steps  a :Port ; :name "stepsInput" .
-app:port-b-sleep  a :Port ; :name "sleepInput" .
-app:port-b-out    a :Port ; :name "insightsOutput" .
+app:port-b-hr     a dtou:Port ; dtou:name "heartRateInput" .
+app:port-b-steps  a dtou:Port ; dtou:name "stepsInput" .
+app:port-b-sleep  a dtou:Port ; dtou:name "sleepInput" .
+app:port-b-out    a dtou:Port ; dtou:name "insightsOutput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
-app:b-purpose-personal a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
+app:b-purpose-personal a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:health-suggestions .
 
 # ── Input specs ──────────────────────────────────────────────────────────────
-app:b-input-hr a :InputSpec ;
-    :data <http://localhost:3000/alice/health/heartrate/> ;
-    :port app:port-b-hr ;
-    :purpose app:b-purpose-personal .
+app:b-input-hr a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:port app:port-b-hr ;
+    dtou:purpose app:b-purpose-personal .
 
-app:b-input-steps a :InputSpec ;
-    :data <http://localhost:3000/alice/health/steps/> ;
-    :port app:port-b-steps ;
-    :purpose app:b-purpose-personal .
+app:b-input-steps a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/steps/> ;
+    dtou:port app:port-b-steps ;
+    dtou:purpose app:b-purpose-personal .
 
-app:b-input-sleep a :InputSpec ;
-    :data <http://localhost:3000/alice/health/sleep/> ;
-    :port app:port-b-sleep ;
-    :purpose app:b-purpose-personal .
+app:b-input-sleep a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/sleep/> ;
+    dtou:port app:port-b-sleep ;
+    dtou:purpose app:b-purpose-personal .
 
 # ── Output spec ───────────────────────────────────────────────────────────────
 # The insights report derives from all three input ports.
-# No :refinement → all policy attributes from the input policies are inherited.
-# The DToU reasoner will derive output attributes/tags/obligations/prohibitions
-# from the combined input data policies via the OutputAttribute/OutputTagging rules.
+# No dtou:refinement → all policy attributes from the input policies are inherited.
+# The DToU reasoner derives output attributes/tags/prohibitions via OutputAttribute/OutputTagging rules.
 
-app:b-output-insights a :OutputSpec ;
-    :port app:port-b-out ;
-    :from app:port-b-hr, app:port-b-steps, app:port-b-sleep .
+app:b-output-insights a dtou:OutputSpec ;
+    dtou:port app:port-b-out ;
+    dtou:from app:port-b-hr, app:port-b-steps, app:port-b-sleep .
 
 # ── App policy ───────────────────────────────────────────────────────────────
-app:HealthInsightsPolicy a :AppPolicy ;
-    :name app:HealthInsights ;
-    :input_spec app:b-input-hr, app:b-input-steps, app:b-input-sleep ;
-    :output_spec app:b-output-insights .
+app:HealthInsightsPolicy a dtou:AppPolicy ;
+    dtou:name app:HealthInsights ;
+    dtou:input_spec app:b-input-hr, app:b-input-steps, app:b-input-sleep ;
+    dtou:output_spec app:b-output-insights .
 ```
 
-**Why no conflict:** App B declares only `vocab:provide-health-suggestions`. Alice's
-data HAS a matching Purpose Tagging → no `UnmatchedExpectation`. Alice's prohibition
+**Why no conflict:** App B declares only `vocab:health-suggestions` as its concept.
+Alice's data HAS a matching PurposeTag → no `UnmatchedExpectation`. Alice's prohibition
 covers only `vocab:commercial-research` → no `ProhibitedUse`. ✓
 
 **Policy derivation:** The output port `app:port-b-out` derives from all three input
@@ -82,8 +81,8 @@ prohibition — any future app accessing the report faces the same constraints.
 import type { AppPolicy } from '@dtou-demo/dtou-client';
 import { APP_HEALTH_INSIGHTS, PURPOSE_HEALTH_SUGGESTIONS, CONCEPT_HEALTH_SUGGESTIONS } from '@dtou-demo/dtou-client';
 
-const APP = 'http://example.org/app#';
-const mkPort = (uri: string, name: string) => ({ uri: `${APP}${uri}`, name });
+const APP = 'urn:dtou-demo:app#';
+const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
 export const APP_B_POLICY: AppPolicy = {
   uri: `${APP}HealthInsightsPolicy`,
@@ -175,18 +174,18 @@ export function generateInsights(
 
 /** Serialize the report as Turtle for saving to the Pod */
 export function reportToTurtle(report: InsightsReport): string {
-  return `@prefix ex:  <http://example.org/health#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+  return `@prefix health: <urn:dtou-demo:health#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
 
 <#report>
-  a ex:HealthInsightsReport ;
-  ex:avgHeartRate ${report.avgHeartRate} ;
-  ex:avgSteps ${report.avgSteps} ;
-  ex:totalSteps ${report.totalSteps} ;
-  ex:avgSleepHours "${report.avgSleepHours}"^^xsd:decimal ;
-  ex:avgSleepQuality ${report.avgSleepQuality} ;
-  ex:narrative """${report.narrative}""" ;
-  ex:generatedAt "${report.generatedAt}"^^xsd:dateTime .
+  a health:HealthInsightsReport ;
+  health:avgHeartRate ${report.avgHeartRate} ;
+  health:avgSteps ${report.avgSteps} ;
+  health:totalSteps ${report.totalSteps} ;
+  health:avgSleepHours "${report.avgSleepHours}"^^xsd:decimal ;
+  health:avgSleepQuality ${report.avgSleepQuality} ;
+  health:narrative """${report.narrative}""" ;
+  health:generatedAt "${report.generatedAt}"^^xsd:dateTime .
 `;
 }
 ```

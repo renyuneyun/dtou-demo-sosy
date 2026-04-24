@@ -1,19 +1,22 @@
-@prefix dtou:  <urn:dtou:core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dpv:   <https://w3id.org/dpv#> .
 @prefix vocab: <urn:dtou-demo:vocab#> .
 
-# ── PurposeExpectation resources ─────────────────────────────────────────────
+# ── Demo Data Use Purpose Vocabulary ─────────────────────────────────────────
+#
+# Purpose concepts for the DToU demo, defined as sub-purposes of dpv:Purpose.
+# Both data owners (in .dtou policies) and apps (in app policies) reference
+# these concept URIs — analogous to how DPV sub-purposes work.
+# Neither side needs to coordinate with the other beyond agreeing on this vocab.
 
-# "Provide personalised health suggestions to the user"
-# Alice's data HAS a Purpose Tagging with dtou:class = vocab:health-suggestions.
-# Apps declaring this purpose: tag expectation passes, not prohibited → allowed.
-vocab:purpose-health-suggestions a dtou:PurposeExpectation ;
-    dtou:descriptor vocab:health-suggestions .
+vocab:health-suggestions a rdfs:Class ;
+    rdfs:subClassOf dpv:Purpose ;
+    rdfs:label "Health Suggestions" ;
+    skos:definition "Use of personal health data to provide personalised health suggestions, insights, or recommendations directly to the data subject." .
 
-# "Commercial research — aggregate and share data with a commercial third party"
-# Alice's data does NOT have a Purpose Tagging with dtou:class = vocab:commercial-research
-#   → UnmatchedExpectation fires.
-# Alice also prohibits this purpose (dtou:activation_condition dtou:purpose vocab:commercial-research)
-#   → ProhibitedUse fires.
-# An app declaring this purpose gets both conflicts.
-vocab:purpose-commercial-research a dtou:PurposeExpectation ;
-    dtou:descriptor vocab:commercial-research .
+vocab:commercial-research a rdfs:Class ;
+    rdfs:subClassOf dpv:Purpose ;
+    rdfs:label "Commercial Research" ;
+    skos:definition "Aggregation and use of personal health data for commercial research purposes, including sharing with third-party commercial research partners." .

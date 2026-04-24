@@ -63,8 +63,9 @@ export const APPS: AppEntry[] = [
     headerColor: 'bg-amber-600',
     result: 'allowed',
     resultReason:
-      'App declares purpose vocab:personal-benefit. ' +
-      'No prohibition in Alice\'s policy targets app:DailyWellnessJournal.',
+      'App declares dtou:descriptor vocab:health-suggestions. ' +
+      'Alice\'s data has a matching PurposeTag — no UnmatchedExpectation. ' +
+      'Prohibition only covers vocab:commercial-research — no ProhibitedUse.',
     keyFeature: 'Basic compatibility check — different app type',
   },
   {
@@ -75,7 +76,7 @@ export const APPS: AppEntry[] = [
     headerColor: 'bg-green-600',
     result: 'allowed',
     resultReason:
-      'Same purpose (personal-benefit), no prohibition match. ' +
+      'Same purpose (vocab:health-suggestions), no prohibition match. ' +
       'Output policy is automatically derived from input policies.',
     keyFeature: 'Policy derivation — output inherits Alice\'s constraints',
   },
@@ -224,25 +225,29 @@ Hard-code the policy Turtle string (same as the `.dtou` files in Task 02):
 
 ```vue
 <script setup lang="ts">
-const POLICY_TURTLE = `@prefix :      <http://example.org/ns#> .
-@prefix demo:  <http://example.org/dtou-demo#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+const POLICY_TURTLE = `@prefix dtou:  <urn:dtou:core#> .
+@prefix demo:  <urn:dtou-demo:> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
-demo:attr-personal a :Attribute ;
-    :name  demo:health-data-personal ;
-    :class :personal ;
-    :value :nil .
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class vocab:health-suggestions ;
+    dtou:value vocab:nil .
 
-# :app is omitted → prohibition applies to ANY app
-demo:prohibition-commercial a :Prohibition ;
-    :mode :Use ;
-    :activation_condition [
-        :purpose vocab:commercial-research
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
+
+# dtou:app omitted → prohibition applies to ANY app
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose vocab:commercial-research
     ] .
 
-demo:health-data-policy a :DataPolicy ;
-    :attribute   demo:attr-personal ;
-    :prohibition demo:prohibition-commercial .`
+demo:health-data-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .`
 </script>
 
 <template>
@@ -253,7 +258,7 @@ demo:health-data-policy a :DataPolicy ;
     </p>
     <pre class="bg-slate-900 text-slate-100 rounded p-4 text-xs overflow-x-auto leading-relaxed">{{ POLICY_TURTLE }}</pre>
     <p class="text-xs text-gray-500 mt-2">
-      The prohibition omits <code>:app</code> — it blocks <em>any</em> app from
+      The prohibition omits <code>dtou:app</code> — it blocks <em>any</em> app from
       using her health data for <code>vocab:commercial-research</code>. Alice did not
       need to know which commercial apps exist when she wrote this policy.
     </p>

@@ -23,47 +23,44 @@ app categories: it checks the declared policy, not what type of app is asking."
 Create this file alongside the data fixtures so the complete policy set is in one place.
 
 ```turtle
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
-@prefix app:   <http://example.org/app#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
+@prefix app:   <urn:dtou-demo:app#> .
 
 # ── Ports ───────────────────────────────────────────────────────────────────
-app:port-a-hr     a :Port ; :name "heartRateInput" .
-app:port-a-steps  a :Port ; :name "stepsInput" .
-app:port-a-sleep  a :Port ; :name "sleepInput" .
+app:port-a-hr     a dtou:Port ; dtou:name "heartRateInput" .
+app:port-a-steps  a dtou:Port ; dtou:name "stepsInput" .
+app:port-a-sleep  a dtou:Port ; dtou:name "sleepInput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
 # The app declares it uses data to provide health suggestions (journaling context).
-# Alice's data HAS a Purpose Tagging for this concept → no UnmatchedExpectation.
+# Alice's data HAS a PurposeTag with dtou:class vocab:health-suggestions → no UnmatchedExpectation.
 # Alice's prohibition only covers vocab:commercial-research → no ProhibitedUse.
-app:a-purpose-health a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
+app:a-purpose-health a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:health-suggestions .
 
 # ── Input specs ──────────────────────────────────────────────────────────────
-# One InputSpec per data resource type.
-# :data IRIs are illustrative; the app reads all resources matching the pattern.
+app:a-input-hr a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:port app:port-a-hr ;
+    dtou:purpose app:a-purpose-health .
 
-app:a-input-hr a :InputSpec ;
-    :data <http://localhost:3000/alice/health/heartrate/> ;
-    :port app:port-a-hr ;
-    :purpose app:a-purpose-health .
+app:a-input-steps a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/steps/> ;
+    dtou:port app:port-a-steps ;
+    dtou:purpose app:a-purpose-health .
 
-app:a-input-steps a :InputSpec ;
-    :data <http://localhost:3000/alice/health/steps/> ;
-    :port app:port-a-steps ;
-    :purpose app:a-purpose-health .
-
-app:a-input-sleep a :InputSpec ;
-    :data <http://localhost:3000/alice/health/sleep/> ;
-    :port app:port-a-sleep ;
-    :purpose app:a-purpose-health .
+app:a-input-sleep a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/sleep/> ;
+    dtou:port app:port-a-sleep ;
+    dtou:purpose app:a-purpose-health .
 
 # ── App policy ───────────────────────────────────────────────────────────────
 
-app:WellnessJournalPolicy a :AppPolicy ;
-    :name app:DailyWellnessJournal ;
-    :input_spec app:a-input-hr, app:a-input-steps, app:a-input-sleep .
-    # No :output_spec — health data produces no output from this app.
+app:WellnessJournalPolicy a dtou:AppPolicy ;
+    dtou:name app:DailyWellnessJournal ;
+    dtou:input_spec app:a-input-hr, app:a-input-steps, app:a-input-sleep .
+    # No dtou:output_spec — health data produces no output from this app.
 ```
 
 ### TypeScript constant (`src/policy.ts`)
@@ -74,12 +71,8 @@ import {
   APP_WELLNESS_JOURNAL, PURPOSE_HEALTH_SUGGESTIONS, CONCEPT_HEALTH_SUGGESTIONS,
 } from '@dtou-demo/dtou-client';
 
-const APP = 'http://example.org/app#';
-const mkPort = (uri: string, name: string) => ({ uri: `${APP}${uri}`, name });
-const mkPurpose = (uri: string) => ({
-  uri: `${VOCAB_BASE}${uri}`,
-  name: `urn:dtou-demo:purpose-${uri}`,
-});
+const APP = 'urn:dtou-demo:app#';
+const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
 export const APP_A_POLICY: AppPolicy = {
   uri: `${APP}WellnessJournalPolicy`,
@@ -118,9 +111,10 @@ export const APP_A_POLICY: AppPolicy = {
 };
 ```
 
-**Why no conflict:** App A declares only `vocab:provide-health-suggestions` as its
-purpose. Alice's data HAS a matching Purpose Tagging → no `UnmatchedExpectation`.
-Alice's prohibition covers only `vocab:commercial-research` → no `ProhibitedUse`. ✓
+**Why no conflict:** App A declares only `vocab:health-suggestions` as its concept
+(`dtou:descriptor`). Alice's data HAS a matching PurposeTag (`dtou:class vocab:health-suggestions`)
+→ no `UnmatchedExpectation`. Alice's prohibition covers only `vocab:commercial-research`
+→ no `ProhibitedUse`. ✓
 
 ---
 

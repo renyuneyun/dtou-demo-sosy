@@ -20,78 +20,78 @@ blocks it automatically, before any data is accessed."
 ### Turtle (`fixtures/app-policies/app-c-marketplace.ttl`)
 
 ```turtle
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
-@prefix app:   <http://example.org/app#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
+@prefix app:   <urn:dtou-demo:app#> .
 
 # ── Ports ───────────────────────────────────────────────────────────────────
-app:port-c-hr     a :Port ; :name "heartRateInput" .
-app:port-c-steps  a :Port ; :name "stepsInput" .
-app:port-c-sleep  a :Port ; :name "sleepInput" .
-app:port-c-out    a :Port ; :name "aggregatedOutput" .
+app:port-c-hr     a dtou:Port ; dtou:name "heartRateInput" .
+app:port-c-steps  a dtou:Port ; dtou:name "stepsInput" .
+app:port-c-sleep  a dtou:Port ; dtou:name "sleepInput" .
+app:port-c-out    a dtou:Port ; dtou:name "aggregatedOutput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
 # App C declares BOTH purposes:
-# - vocab:provide-health-suggestions: Alice has a matching Tag → passes that check
-# - vocab:commercial-research: Alice has NO matching Tag (UnmatchedExpectation)
+# - vocab:health-suggestions: Alice has a matching PurposeTag → passes that check
+# - vocab:commercial-research: Alice has NO matching PurposeTag (UnmatchedExpectation)
 #                              AND Alice has a Prohibition (ProhibitedUse)
 # Both conflicts fire for the commercial-research purpose.
 
-app:c-purpose-health a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
+app:c-purpose-health a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:health-suggestions .
 
-app:c-purpose-commercial a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-commercial-research> .
+app:c-purpose-commercial a dtou:PurposeExpectation ;
+    dtou:descriptor vocab:commercial-research .
 
 # ── Input specs ──────────────────────────────────────────────────────────────
-app:c-input-hr a :InputSpec ;
-    :data <http://localhost:3000/alice/health/heartrate/> ;
-    :port app:port-c-hr ;
-    :purpose app:c-purpose-health, app:c-purpose-commercial .  # ← commercial triggers conflicts
+app:c-input-hr a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:port app:port-c-hr ;
+    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .  # ← commercial triggers conflicts
 
-app:c-input-steps a :InputSpec ;
-    :data <http://localhost:3000/alice/health/steps/> ;
-    :port app:port-c-steps ;
-    :purpose app:c-purpose-health, app:c-purpose-commercial .
+app:c-input-steps a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/steps/> ;
+    dtou:port app:port-c-steps ;
+    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
 
-app:c-input-sleep a :InputSpec ;
-    :data <http://localhost:3000/alice/health/sleep/> ;
-    :port app:port-c-sleep ;
-    :purpose app:c-purpose-health, app:c-purpose-commercial .
+app:c-input-sleep a dtou:InputSpec ;
+    dtou:data <http://localhost:3000/alice/health/sleep/> ;
+    dtou:port app:port-c-sleep ;
+    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
 
 # ── Output spec ───────────────────────────────────────────────────────────────
 # Aggregated dataset sent to external commercial service.
-# :refinement :re-c-delete-personal removes the personal-ownership attribute
-# before forwarding (simulating that the data is stripped of Alice's identity
-# before commercial use — but it is still prohibited by Alice's policy).
+# dtou:refinement removes the personal-ownership attribute before forwarding
+# (simulating data stripping — but still prohibited by Alice's policy).
 
-app:re-c-delete-personal a :Delete ;
-    :filter [
-        :name  <http://example.org/dtou-demo#health-data-personal> ;
-        :class :personal ;
-        :value :nil
+app:c-output-aggregate a dtou:OutputSpec ;
+    dtou:port app:port-c-out ;
+    dtou:from app:port-c-hr, app:port-c-steps, app:port-c-sleep ;
+    dtou:refinement [
+        a dtou:Delete ;
+        dtou:filter [
+            a dtou:Filter ;
+            dtou:name  vocab:health-data-personal ;
+            dtou:class dtou:personal ;
+            dtou:value vocab:nil
+        ]
     ] .
 
-app:c-output-aggregate a :OutputSpec ;
-    :port app:port-c-out ;
-    :from app:port-c-hr, app:port-c-steps, app:port-c-sleep ;
-    :refinement app:re-c-delete-personal .
-
 # ── App policy ───────────────────────────────────────────────────────────────
-app:HealthShareProPolicy a :AppPolicy ;
-    :name app:HealthSharePro ;
-    :input_spec app:c-input-hr, app:c-input-steps, app:c-input-sleep ;
-    :output_spec app:c-output-aggregate .
+app:HealthShareProPolicy a dtou:AppPolicy ;
+    dtou:name app:HealthSharePro ;
+    dtou:input_spec app:c-input-hr, app:c-input-steps, app:c-input-sleep ;
+    dtou:output_spec app:c-output-aggregate .
 ```
 
 **How the conflict fires:**
-1. Alice's data policy prohibition: `:activation_condition [ :purpose vocab:commercial-research ]`
-   — `:app` is **omitted**, so it matches any app.
-2. App C's InputSpec: `:purpose app:c-purpose-commercial`, where `app:c-purpose-commercial`
-   has `:name <urn:dtou-demo:purpose-commercial-research>` — the same shared vocab URI
-   as `vocab:commercial-research`. ✓
-3. `:purpose` matches → `:ProhibitedUse` fires. App C's own `:name` is irrelevant to
-   whether it is blocked.
+1. Alice's data policy prohibition: `dtou:activation_condition [ dtou:purpose vocab:commercial-research ]`
+   — `dtou:app` is **omitted**, so it matches any app.
+2. App C's InputSpec: `dtou:purpose app:c-purpose-commercial`, where `app:c-purpose-commercial`
+   has `dtou:descriptor vocab:commercial-research` — the same shared concept URI as in
+   Alice's prohibition. ✓
+3. The reasoner matches on concept URI → `dtou:ProhibitedUse` fires. App C's own identity
+   (`dtou:name`) is irrelevant to whether it is blocked.
 
 ### TypeScript constant (`src/policy.ts`)
 
@@ -103,8 +103,8 @@ import {
   PURPOSE_COMMERCIAL_RESEARCH, CONCEPT_COMMERCIAL_RESEARCH,
 } from '@dtou-demo/dtou-client';
 
-const APP = 'http://example.org/app#';
-const mkPort = (uri: string, name: string) => ({ uri: `${APP}${uri}`, name });
+const APP = 'urn:dtou-demo:app#';
+const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
 export const APP_C_POLICY: AppPolicy = {
   uri: `${APP}HealthShareProPolicy`,
@@ -157,7 +157,7 @@ export const APP_C_POLICY: AppPolicy = {
         {
           type: 'Delete',
           filter: {
-            name: 'http://example.org/dtou-demo#health-data-personal',
+            name: 'urn:dtou-demo:vocab#health-data-personal',
             cls: 'personal',
             value: 'nil',
           },

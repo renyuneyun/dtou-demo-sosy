@@ -10,33 +10,33 @@ These are committed under `fixtures/` and uploaded to the Solid server via `setu
 
 ## Background: DToU Policy Language
 
-Policies are written in Turtle using the DToU core namespace
-`@prefix : <http://example.org/ns#>`.
+Policies are written in Turtle using the canonical DToU core namespace
+`@prefix dtou: <urn:dtou:core#>`.
 
-Key building blocks:
+Key building blocks used in data policies and app policies:
 
 | Class | Used in | Purpose |
 |-------|---------|---------|
-| `:Attribute` | DataPolicy | A name/class/value triple attached to data |
-| `:Purpose` | DataPolicy | Tags data with an allowed purpose (subclass of `:Tag`) |
-| `:Prohibition` | DataPolicy | Prohibits a specific app+purpose combination |
-| `:Obligation` | DataPolicy | Triggered obligation when a purpose matches |
-| `:DataPolicy` | DataPolicy root | Container: `:attribute`, `:tag`, `:requirement`, `:prohibition`, `:obligation` |
-| `:PurposeExpectation` | AppPolicy | App declares which purpose it will use data for |
-| `:SecurityProvide` | AppPolicy | App commits to a security requirement |
-| `:InputSpec` | AppPolicy | Describes one data input: `:data`, `:port`, `:purpose`, `:provide`, `:downstream` |
-| `:OutputSpec` | AppPolicy | Describes one data output: `:port`, `:from` (input ports), `:refinement` |
-| `:AppPolicy` | AppPolicy root | Container: `:name`, `:input_spec`, `:output_spec` |
+| `dtou:Attribute` | DataPolicy | A name/class/value triple attached to data |
+| `dtou:PurposeTag` | DataPolicy | Tags data with an allowed purpose |
+| `dtou:Prohibition` | DataPolicy | Prohibits a specific app+purpose combination |
+| `dtou:Obligation` | DataPolicy | Triggered obligation when a purpose matches |
+| `dtou:DataPolicy` | DataPolicy root | Container: `dtou:attribute`, `dtou:tagging`, `dtou:prohibition`, `dtou:obligation` |
+| `dtou:Data` | DataPolicy wrapper | Links a resource URI to its DataPolicy (required for server lookup) |
+| `dtou:PurposeExpectation` | AppPolicy | App declares which purpose it will use data for; `dtou:descriptor` holds the concept URI |
+| `dtou:SecurityProvide` | AppPolicy | App commits to a security requirement |
+| `dtou:InputSpec` | AppPolicy | Describes one data input: `dtou:data`, `dtou:port`, `dtou:purpose`, `dtou:provide`, `dtou:downstream` |
+| `dtou:OutputSpec` | AppPolicy | Describes one data output: `dtou:port`, `dtou:from` (input ports), `dtou:refinement` |
+| `dtou:AppPolicy` | AppPolicy root | Container: `dtou:name`, `dtou:input_spec`, `dtou:output_spec` |
 
-The DToU reasoner detects three types of conflicts (all subclasses of `:Conflict`):
-- `:UnsatisfiedRequirement` — app fails to provide something the data policy requires
-- `:UnmatchedExpectation` — app expects a tag the data doesn't have
-- `:ProhibitedUse` — app (identified by its `:name` URI) uses data for a prohibited purpose
+> For an explanation of how tags, taggings, requirements, and conflict types relate,
+> see the "DToU Tag Terminology" section in OVERVIEW.md.
 
 > **Non-coordination through shared vocabulary:**
 > Both data owners and apps must use the **same URIs** for purpose concepts. This is
 > the "shared ontology" aspect of DToU — there is no bilateral negotiation, but both
-> sides agree on a common vocabulary (like `urn:dtou-demo:purpose-personal-benefit`).
+> sides agree on a common vocabulary (like `urn:dtou-demo:vocab#health-suggestions`),
+> rooted in standard vocabularies like DPV.
 
 ---
 
@@ -50,16 +50,19 @@ fixtures/
       card.ttl
     health/
       heartrate/
+        container.dtou                # Container-level data policy (served as .dtou)
         2024-03-01.ttl
         2024-03-01.ttl.dtou
         2024-03-02.ttl
         2024-03-02.ttl.dtou
       steps/
+        container.dtou
         2024-03-01.ttl
         2024-03-01.ttl.dtou
         2024-03-02.ttl
         2024-03-02.ttl.dtou
       sleep/
+        container.dtou
         2024-03-01.ttl
         2024-03-01.ttl.dtou
         2024-03-02.ttl
@@ -68,49 +71,48 @@ fixtures/
   README.md
 ```
 
+> **Note on container.dtou:** All three apps reference container URLs
+> (e.g. `http://localhost:3000/alice/health/heartrate/`) in their `dtou:data` fields.
+> The server appends `.dtou` to that URL and fetches the container-level policy.
+> `container.dtou` is uploaded by `setup.sh` as `.dtou` (not `container.dtou`).
+> It includes a `dtou:Data` wrapper with `dtou:uri` matching the container URL.
+
 ---
 
-## `fixtures/vocab.ttl` — Shared DToU Vocabulary
+## `fixtures/vocab.ttl` — Shared Demo Vocabulary
 
-Shared concept URIs and PurposeExpectation resources referenced by both Alice's
-data policy and the app policies.
+Pure terminology file defining the purpose concepts used by both Alice's data
+policy and the app policies. Uses DPV (`dpv:Purpose`) as the base — each concept
+is an `rdfs:subClassOf dpv:Purpose`, analogous to how DPV sub-purposes work.
+This file defines *what concepts mean*, not how they are used in any specific
+framework. Both data owners and apps reference these same concept URIs; the DToU
+reasoner matches on URI equality without any bilateral coordination.
 
-**DToU Tag terminology:**
-- **Tag** — umbrella class, covers both **Tagging** and **Requirement**
-  - **Tagging** — informational tags the app can `:expect`; subtypes: Purpose, Integrity
-    - **Purpose** — a widely-used Tagging type with `:purpose` shorthand on InputSpec
-  - **Requirement** — mandatory; app must `:provide` matching value; subtype: Security
-
-**How `:purpose` on InputSpec works (two roles):**
-1. Tag expectation (Tagging side) — data must have a Purpose Tagging whose `:name`
-   matches; `UnmatchedExpectation` fires if absent. Extra Taggings on data beyond
-   what the app declares are fine.
-2. Prohibition check — `ProhibitedUse` fires if the prohibition's
-   `:activation_condition :purpose` references the same resource.
+> For an explanation of DToU tag types (Tagging, Requirement, PurposeTag, etc.)
+> and the three conflict types, see the "DToU Tag Terminology" section in OVERVIEW.md.
 
 **How concept URIs link both sides:**
-The PurposeExpectation's `:name` must equal the `:class` of the Attribute referenced
-by Alice's Purpose Tagging — that `:class` value becomes the Tagging's `:name`
-(via `:TagName :sameAs :AttributeClass`). The reasoner matches on `:type` + `:name`.
+The `dtou:descriptor` on a `PurposeExpectation` (app side) must equal the
+`dtou:class` of the `Attribute` referenced by the data's `PurposeTag` (data
+policy side). The reasoner matches on URI equality — so both sides must use the
+same shared vocabulary URI.
 
 ```turtle
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos:  <http://www.w3.org/2004/02/skos/core#> .
+@prefix dpv:   <https://w3id.org/dpv#> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
-# ── PurposeExpectation resources ─────────────────────────────────────────────
+vocab:health-suggestions a rdfs:Class ;
+    rdfs:subClassOf dpv:Purpose ;
+    rdfs:label "Health Suggestions" ;
+    skos:definition "Use of personal health data to provide personalised health suggestions, insights, or recommendations directly to the data subject." .
 
-# "Provide personalised health suggestions to the user"
-# Alice's data HAS a Purpose Tagging with this :name.
-# Apps declaring this purpose: tag expectation passes, not prohibited → allowed.
-vocab:provide-health-suggestions a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-health-suggestions> .
-
-# "Commercial research — aggregate and share data with a commercial third party"
-# Alice's data does NOT have a Purpose Tagging with this :name (UnmatchedExpectation).
-# Alice also prohibits this purpose (ProhibitedUse).
-# An app declaring this purpose gets both conflicts.
-vocab:commercial-research a :PurposeExpectation ;
-    :name <urn:dtou-demo:purpose-commercial-research> .
+vocab:commercial-research a rdfs:Class ;
+    rdfs:subClassOf dpv:Purpose ;
+    rdfs:label "Commercial Research" ;
+    skos:definition "Aggregation and use of personal health data for commercial research purposes, including sharing with third-party commercial research partners." .
 ```
 
 ---
@@ -182,79 +184,65 @@ Same; durationHours 6.5, qualityScore 71, date `2024-03-02`.
 
 ## Data Policy Files (`.dtou`)
 
-All six health data resources share the same data policy.
-Copy this content verbatim into each of the six `.dtou` files.
+Each health data container has a `container.dtou` file (uploaded as `.dtou`).
+The per-file `*.ttl.dtou` files share the same policy structure but without the
+`dtou:Data` wrapper (they're only used if apps reference specific file URLs).
 
 ### Explanation
 
 Alice's data policy expresses three things:
 
-1. **Attribute**: carries the data-level information referenced by the Purpose Tagging.
-   Attributes do not permit or prohibit anything by themselves — they are
-   information holders referenced via `:attribute_ref`.
+1. **Attribute**: carries the data-level information referenced by the PurposeTag.
+   `dtou:class` holds the concept URI; the reasoner matches this against the app's
+   `dtou:descriptor` on its PurposeExpectation.
 
-2. **Purpose Tagging** (`vocab:provide-health-suggestions`): Alice tags her health
-   data as suitable for providing personal health suggestions. Apps that declare
-   this purpose (via InputSpec `:purpose`) will find the matching Tagging and
-   pass that check (`UnmatchedExpectation` does NOT fire).
-   Apps that declare any OTHER purpose they expect to find will get
-   `UnmatchedExpectation` if Alice's data has no corresponding Tagging for it.
+2. **PurposeTag** (for `vocab:health-suggestions`): Alice tags her health data as
+   suitable for providing personal health suggestions. Apps that declare this purpose
+   via `dtou:descriptor vocab:health-suggestions` will find the matching tag and pass
+   (`UnmatchedExpectation` does NOT fire). Apps declaring any other purpose they
+   expect to find will get `UnmatchedExpectation` if no corresponding tag exists.
 
-3. **Prohibition** (`vocab:commercial-research`): any app declaring
-   `vocab:commercial-research` as an InputSpec `:purpose` is blocked.
-   `:app` is omitted — it matches any app regardless of its name.
-   Combined with the absent `commercial-research` Tagging, App C gets both
-   `UnmatchedExpectation` (tag absent) and `ProhibitedUse` (actively prohibited).
+3. **Prohibition** (`vocab:commercial-research`): any app whose PurposeExpectation
+   has `dtou:descriptor vocab:commercial-research` is blocked. `dtou:app` is omitted
+   — it matches any app. Combined with the absent commercial-research tag, App C
+   gets both `UnmatchedExpectation` (tag absent) and `ProhibitedUse` (prohibited).
 
-### All six `.dtou` files
+### `container.dtou` (same structure for heartrate, steps, sleep)
 
 ```turtle
-@prefix :      <http://example.org/ns#> .
-@prefix demo:  <http://example.org/dtou-demo#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix demo:  <urn:dtou-demo:> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
-# ── Attribute ────────────────────────────────────────────────────────────────
-# Information holder for the "provide health suggestions" purpose concept.
-# :class value becomes the Purpose Tagging's :name (TagName = AttributeClass).
-# This is what the PurposeExpectation :name on the app side must match.
+# Required wrapper: dtou:uri must match the container URL in InputSpec dtou:data
+demo:data-heartrate a dtou:Data ;
+    dtou:uri <http://localhost:3000/alice/health/heartrate/> ;
+    dtou:policy demo:health-data-policy .
 
-demo:attr-health-suggest a :Attribute ;
-    :name  demo:health-suggest-id ;
-    :class <urn:dtou-demo:purpose-health-suggestions> ;
-    :value :nil .
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class vocab:health-suggestions ;
+    dtou:value vocab:nil .
 
-# ── Purpose Tagging ──────────────────────────────────────────────────────────
-# Tags this data as suitable for "provide health suggestions" use.
-# Apps that :purpose vocab:provide-health-suggestions will find this Tagging.
-# UnmatchedExpectation does NOT fire for those apps.
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
 
-demo:tagging-health-suggest a :Purpose ;
-    :attribute_ref demo:attr-health-suggest .
-
-# ── Prohibition ──────────────────────────────────────────────────────────────
-# Block ANY app from using this data for commercial research.
-# :app is omitted → matches any app, regardless of its name.
-# Combined with the absent commercial-research Tagging, App C gets both:
-#   - UnmatchedExpectation (no such Tagging on data)
-#   - ProhibitedUse (active prohibition)
-
-demo:prohibition-commercial a :Prohibition ;
-    :mode :Use ;
-    :activation_condition [
-        :purpose vocab:commercial-research
+# dtou:app omitted → matches any app, regardless of its name
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose vocab:commercial-research
     ] .
 
-# ── Data Policy ──────────────────────────────────────────────────────────────
-
-demo:health-data-policy a :DataPolicy ;
-    :attribute   demo:attr-health-suggest ;
-    :tag         demo:tagging-health-suggest ;
-    :prohibition demo:prohibition-commercial .
+demo:health-data-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .
 ```
 
-> **Demo talking point:** Alice's prohibition omits `:app` entirely — it blocks
+> **Demo talking point:** Alice's prohibition omits `dtou:app` entirely — it blocks
 > *any* app that claims a commercial research purpose, including apps that don't
-> exist yet. And because she didn't add a `commercial-research` Purpose Tagging,
+> exist yet. And because she didn't add a `commercial-research` PurposeTag,
 > even without the prohibition App C would already get `UnmatchedExpectation`.
 > Compare this to WAC/ACP: Alice would need to update an ACL for every new app
 > she wants to block, and there's no automated check at all.
@@ -328,7 +316,12 @@ for subdir in heartrate steps sleep; do
   done
   for f in "$POD/health/$subdir/"*.dtou; do
     fname="$(basename "$f")"
-    upload "$f" "/alice/health/$subdir/$fname"
+    # container.dtou is the container-level policy; served at ".dtou" (not "container.dtou")
+    if [ "$fname" = "container.dtou" ]; then
+      upload "$f" "/alice/health/$subdir/.dtou"
+    else
+      upload "$f" "/alice/health/$subdir/$fname"
+    fi
   done
 done
 
@@ -361,17 +354,17 @@ Alice's standing policy for all health data:
 
 | Mechanism | Content |
 |-----------|---------|
-| Attribute | `demo:attr-health-suggest` — info holder for the `provide-health-suggestions` concept |
-| Purpose Tagging | `demo:tagging-health-suggest` — tags data as suitable for health suggestions |
-| Prohibition | Block **any app** from declaring `vocab:commercial-research` purpose (`:app` omitted) |
+| Attribute | `demo:attr-health-suggest` — info holder; `dtou:class vocab:health-suggestions` |
+| PurposeTag | `demo:tagging-health-suggest` — tags data as suitable for health suggestions |
+| Prohibition | Block **any app** declaring `vocab:commercial-research` purpose (`dtou:app` omitted) |
 
-**Why App C is denied:** App C's InputSpec declares `:purpose vocab:commercial-research`.
+**Why App C is denied:** App C's PurposeExpectation has `dtou:descriptor vocab:commercial-research`.
 Two conflicts fire:
-1. `UnmatchedExpectation` — Alice's data has no `commercial-research` Purpose Tagging
-2. `ProhibitedUse` — Alice's prohibition matches (`:app` omitted, `:purpose` matches)
+1. `UnmatchedExpectation` — Alice's data has no PurposeTag with `dtou:class vocab:commercial-research`
+2. `ProhibitedUse` — Alice's prohibition matches (`dtou:app` omitted, `dtou:purpose` matches)
 
-**Why Apps A and B are allowed:** They declare only `:purpose vocab:provide-health-suggestions`.
-Alice's data HAS a matching Purpose Tagging → no `UnmatchedExpectation`.
+**Why Apps A and B are allowed:** They declare only `dtou:descriptor vocab:health-suggestions`.
+Alice's data HAS a matching PurposeTag → no `UnmatchedExpectation`.
 The prohibition only covers `commercial-research` → no `ProhibitedUse`. No conflicts.
 
 ## Shared Vocabulary
@@ -386,8 +379,10 @@ policy compatibility checking.
 ## Acceptance Criteria
 
 - All `.ttl` files parse as valid Turtle.
-- All `.dtou` files are valid Turtle and contain a `:DataPolicy` subject.
-- `vocab.ttl` defines `vocab:personal-benefit` and `vocab:commercial-research`.
-- The prohibition in each `.dtou` references `vocab:commercial-research` as `:purpose`
-  and omits `:app` (no app-name restriction).
+- All `.dtou` files are valid Turtle and contain a `dtou:DataPolicy` subject.
+- `container.dtou` files also contain a `dtou:Data` wrapper with the correct `dtou:uri`.
+- `vocab.ttl` defines `vocab:purpose-health-suggestions` and `vocab:purpose-commercial-research`.
+- The prohibition in each `container.dtou` references `vocab:commercial-research` as `dtou:purpose`
+  and omits `dtou:app` (no app-name restriction).
+- `setup.sh` uploads `container.dtou` as `.dtou` (the container-level policy endpoint).
 - `setup.sh` is executable.

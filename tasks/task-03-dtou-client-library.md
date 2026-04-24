@@ -69,8 +69,8 @@ export interface Port {
 }
 
 export interface PurposeExpectation {
-  uri: string;    // resource IRI (shared vocab, e.g. vocab:provide-health-suggestions)
-  name: string;   // :name — shared concept URI (e.g. urn:dtou-demo:purpose-health-suggestions)
+  uri: string;    // resource IRI (e.g. urn:dtou-demo:vocab#purpose-health-suggestions)
+  name: string;   // dtou:descriptor — shared concept URI (e.g. urn:dtou-demo:vocab#health-suggestions)
 }
 
 export interface SecurityProvide {
@@ -167,17 +167,16 @@ export const MOCK_MODE: boolean =
 ## `vocab.ts`
 
 ```typescript
-export const VOCAB_BASE = 'http://example.org/dtou-demo/vocab#';
-export const URN_BASE   = 'urn:dtou-demo:';
-export const APP_BASE   = 'http://example.org/app#';
+export const VOCAB_BASE = 'urn:dtou-demo:vocab#';
+export const APP_BASE   = 'urn:dtou-demo:app#';
 
-// PurposeExpectation resource URIs (used in InputSpec :purpose)
-export const PURPOSE_HEALTH_SUGGESTIONS: string  = `${VOCAB_BASE}provide-health-suggestions`;
-export const PURPOSE_COMMERCIAL_RESEARCH: string = `${VOCAB_BASE}commercial-research`;
+// PurposeExpectation resource URIs (node identity; used in InputSpec dtou:purpose)
+export const PURPOSE_HEALTH_SUGGESTIONS: string  = `${VOCAB_BASE}purpose-health-suggestions`;
+export const PURPOSE_COMMERCIAL_RESEARCH: string = `${VOCAB_BASE}purpose-commercial-research`;
 
-// Concept name URIs (:name on PurposeExpectation = :class on Attribute in data policy)
-export const CONCEPT_HEALTH_SUGGESTIONS: string  = `${URN_BASE}purpose-health-suggestions`;
-export const CONCEPT_COMMERCIAL_RESEARCH: string = `${URN_BASE}purpose-commercial-research`;
+// Concept name URIs (dtou:descriptor on PE = dtou:class on Attribute in data policy)
+export const CONCEPT_HEALTH_SUGGESTIONS: string  = `${VOCAB_BASE}health-suggestions`;
+export const CONCEPT_COMMERCIAL_RESEARCH: string = `${VOCAB_BASE}commercial-research`;
 
 export const APP_HEALTHSHARE_PRO: string  = `${APP_BASE}HealthSharePro`;
 export const APP_WELLNESS_JOURNAL: string = `${APP_BASE}DailyWellnessJournal`;
@@ -193,37 +192,32 @@ export const APP_HEALTH_INSIGHTS: string  = `${APP_BASE}HealthInsights`;
 Converts an `AppPolicy` to Turtle using `n3`'s Writer. This Turtle is what
 gets sent to the server.
 
-Key output structure (see fixtures/app-policies/*.ttl for reference):
+Key output structure (see `fixtures/app-policies/*.ttl` for full reference):
 ```turtle
-@prefix :      <http://example.org/ns#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
-@prefix app:   <http://example.org/app#> .
+@prefix dtou:  <urn:dtou:core#> .
+@prefix app:   <urn:dtou-demo:app#> .
 
-<portUri> a :Port ; :name "portName" .
-<purposeUri> a :PurposeExpectation ; :name <conceptUri> .
+<portUri> a dtou:Port ; dtou:name "portName" .
+<purposeUri> a dtou:PurposeExpectation ; dtou:descriptor <conceptUri> .
 
-<inputSpecUri> a :InputSpec ;
-    :data <dataUri> ;
-    :port <portUri> ;
-    :purpose <purposeUri> .
+<inputSpecUri> a dtou:InputSpec ;
+    dtou:data <dataUri> ;
+    dtou:port <portUri> ;
+    dtou:purpose <purposeUri> .
 
-<outputSpecUri> a :OutputSpec ;
-    :port <outPortUri> ;
-    :from <inPort1>, <inPort2> .
+<outputSpecUri> a dtou:OutputSpec ;
+    dtou:port <outPortUri> ;
+    dtou:from <inPort1>, <inPort2> .
 
-<policyUri> a :AppPolicy ;
-    :name <appNameUri> ;
-    :input_spec <inputSpecUri> ;
-    :output_spec <outputSpecUri> .
+<policyUri> a dtou:AppPolicy ;
+    dtou:name <appNameUri> ;
+    dtou:input_spec <inputSpecUri> ;
+    dtou:output_spec <outputSpecUri> .
 ```
 
-Implement the serializer to iterate over `AppPolicy.inputs` and `AppPolicy.outputs`
-and produce valid Turtle. Use `n3`'s `Writer` class.
-
-> **Note:** Check the exact Turtle structure expected by the server against the
-> live implementation at https://github.com/renyuneyun/solid-dtou before
-> finalizing this serializer. The fixtures in `fixtures/app-policies/*.ttl`
-> serve as the reference.
+The serializer iterates over `AppPolicy.inputs` and `AppPolicy.outputs` and produces
+valid Turtle using n3's `Writer`. Uses `urn:dtou:core#` for all DToU predicates and
+`urn:dtou-demo:app#` for app node URIs.
 
 ---
 
@@ -264,60 +258,43 @@ export async function checkPolicy(
 
   const policyTurtle = serializeAppPolicy(policy);
 
-  // NOTE: The exact endpoint path and request format must be verified against
-  // the live solid-dtou server implementation. The path '/dtou' is a best
-  // estimate from the spec. Check https://github.com/renyuneyun/solid-dtou
-  // for the actual endpoint.
+  // Step 1: POST the app policy to register it with the server
   const endpoint = `${SOLID_SERVER}/dtou`;
-
-  const res = await fetch(endpoint, {
+  const registerRes = await fetch(endpoint, {
     method: 'POST',
     headers: {
-      'Content-Type': 'text/turtle',
+      'Content-Type': 'application/json',
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
     },
-    body: policyTurtle,
+    body: JSON.stringify({ policy: policyTurtle }),
   });
 
-  if (!res.ok) {
-    throw new Error(`DToU server returned ${res.status}: ${await res.text()}`);
+  if (!registerRes.ok) {
+    throw new Error(`DToU server returned ${registerRes.status}: ${await registerRes.text()}`);
   }
 
-  const body = await res.text();
-  return parseServerResult(body);
+  // Step 2: GET the compliance result (Turtle with conflict triples)
+  const complianceRes = await fetch(`${SOLID_SERVER}/dtou/compliance`, {
+    method: 'GET',
+    headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+  });
+
+  if (!complianceRes.ok) {
+    throw new Error(`DToU server returned ${complianceRes.status}: ${await complianceRes.text()}`);
+  }
+
+  return parseServerResult(await complianceRes.text());
 }
 
 /**
- * Parse the server's reasoning result.
- * The exact response format (JSON-LD, Turtle, plain JSON) needs to be verified
- * against the actual server implementation. This is a placeholder parser.
+ * Parse the server's Turtle reasoning result.
+ * The server returns Turtle with urn:dtou:core#Conflict, urn:dtou:core#ProhibitedUse,
+ * and urn:dtou:core#UnmatchedExpectation triples.
+ * Uses n3 Parser to extract typed conflicts with descriptive detail strings.
  */
 function parseServerResult(body: string): CompatibilityResult {
-  // TODO: implement based on actual server response format.
-  // The server likely returns Turtle or JSON containing :Conflict instances,
-  // :ActivatedObligation instances, and output policy triples.
-  // For now, attempt JSON parse as a guess:
-  try {
-    const json = JSON.parse(body);
-    return {
-      compatible: json.compatible ?? true,
-      conflicts: json.conflicts ?? [],
-      activatedObligations: json.activatedObligations ?? [],
-      summary: json.summary ?? (json.compatible ? 'Compatible.' : 'Conflicts detected.'),
-    };
-  } catch {
-    // If not JSON, inspect for conflict indicators in Turtle
-    const hasConflict = body.includes(':Conflict') || body.includes(':ProhibitedUse') ||
-      body.includes(':UnmatchedExpectation') || body.includes(':UnsatisfiedRequirement');
-    return {
-      compatible: !hasConflict,
-      conflicts: hasConflict
-        ? [{ type: 'ProhibitedUse', detail: 'Server reported a conflict (raw response).' }]
-        : [],
-      activatedObligations: [],
-      summary: hasConflict ? 'Conflicts detected.' : 'Compatible.',
-    };
-  }
+  // Uses n3 Parser — see actual implementation in dtouApi.ts
+  // Falls back to heuristic string inspection if parsing fails.
 }
 ```
 
@@ -332,28 +309,28 @@ data policy Turtle in the UI policy panel**. It has no effect on reasoning.
 import type { DataPolicyDisplay } from './types.js';
 import { MOCK_MODE } from './config.js';
 
-const MOCK_DTOU_TURTLE = `@prefix :      <http://example.org/ns#> .
-@prefix demo:  <http://example.org/dtou-demo#> .
-@prefix vocab: <http://example.org/dtou-demo/vocab#> .
+const MOCK_DTOU_TURTLE = `@prefix dtou:  <urn:dtou:core#> .
+@prefix demo:  <urn:dtou-demo:> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
 
-demo:attr-health-suggest a :Attribute ;
-    :name  demo:health-suggest-id ;
-    :class <urn:dtou-demo:purpose-health-suggestions> ;
-    :value :nil .
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class vocab:health-suggestions ;
+    dtou:value vocab:nil .
 
-demo:tagging-health-suggest a :Purpose ;
-    :attribute_ref demo:attr-health-suggest .
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
 
-demo:prohibition-commercial a :Prohibition ;
-    :mode :Use ;
-    :activation_condition [
-        :purpose vocab:commercial-research
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose vocab:commercial-research
     ] .
 
-demo:health-data-policy a :DataPolicy ;
-    :attribute   demo:attr-health-suggest ;
-    :tag         demo:tagging-health-suggest ;
-    :prohibition demo:prohibition-commercial .`;
+demo:health-data-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .`;
 
 /**
  * Fetch a .dtou file for UI display purposes only.
@@ -441,9 +418,10 @@ export { getMockCompatibility } from './mock.js';
 - TypeScript compiles without errors.
 - `checkPolicy` in mock mode returns `compatible: true` for App A/B and `compatible: false`
   (2 conflicts) for App C.
-- `serializeAppPolicy` produces valid Turtle parseable by `n3`.
+- `serializeAppPolicy` produces valid Turtle parseable by `n3`, using `urn:dtou:core#` for all DToU predicates.
 - `fetchDataPolicyForDisplay` is clearly separate from `checkPolicy` — it is never
   called as part of a policy check, only for UI display.
-- The `parseServerResult` function has a prominent TODO noting the response format
-  needs verification against the actual server.
+- `parseServerResult` uses n3 Parser to extract typed conflicts from the Turtle response
+  (server returns `urn:dtou:core#Conflict` triples).
+- `checkPolicy` does POST `/dtou` then GET `/dtou/compliance` (two-step flow).
 - No local N3 reasoning is performed anywhere in the library.

@@ -12,48 +12,85 @@ Do not start a task until all prior tasks are complete and compile cleanly.
 
 ---
 
-## Key Unknown: The `/dtou` Server Endpoint
+## The `/dtou` Server Endpoint
 
-**This is the most important thing to verify before implementing task-03.**
+The `checkPolicy()` function in `dtouApi.ts` calls the solid-dtou server:
 
-The `checkPolicy()` function in `dtouApi.ts` calls the solid-dtou server's DToU
-endpoint. The spec says the path is roughly `/dtou` and the method is `POST`, but
-the exact:
-- URL path
-- Request body format (Turtle? JSON-LD? multipart?)
-- Response body format (Turtle with `:Conflict` triples? JSON?)
-- Authentication mechanism
+- **POST** `/dtou` — body: `{ policy: <Turtle string> }` (JSON wrapper)
+- **GET** `/dtou/compliance` — returns Turtle with reasoning result
+- Response Turtle uses `urn:dtou:core#Conflict`, `urn:dtou:core#ProhibitedUse`,
+  `urn:dtou:core#UnmatchedExpectation` triples
+- `parseServerResult()` parses the Turtle with n3 and extracts typed conflicts
 
-…are not fully specified in the publicly available spec. Before finalizing task-03,
-consult:
-- https://github.com/renyuneyun/solid-dtou (server implementation)
-- The previous demo app linked from that repo (Vue client showing real API usage)
-
-The `parseServerResult()` function in task-03 has a prominent TODO for exactly this.
 All three apps fall back gracefully to mock mode (`VITE_DTOU_MOCK=true`) when the
 server is unavailable, so the demo works offline regardless.
 
 ---
 
+## DToU Tag Terminology
+
+DToU contains a tag-based language for expressing certain aspects of the usage policy. The hierarchy can be confusing — here is the canonical breakdown:
+
+- **Tag** — umbrella class; covers both **Tagging** and **Requirement**
+  - **Tagging** — informational; the app *expects* to find it on data.
+    If declared but absent, `UnmatchedExpectation` fires.
+    - **Purpose** (`dtou:PurposeTag`) — the most common Tagging type.
+      Uses `dtou:purpose` shorthand on `dtou:InputSpec`.
+      Matched by concept URI: `dtou:descriptor` (app) vs `dtou:class` (data attribute).
+  - **Requirement** — mandatory; the app must *provide* a matching value.
+    If not provided, `UnsatisfiedRequirement` fires.
+    - **Security** (`dtou:SecurityProvide`) (or equivalently, `dtou:SecurityTag`) — the most common Requirement type.
+
+- **Prohibition** (`dtou:Prohibition`) — independently of tags, blocks a purpose.
+  `ProhibitedUse` fires if the app's `dtou:purpose` matches the prohibition's
+  `dtou:activation_condition`. `dtou:app` can be omitted to match any app.
+
+**Three conflict types** (all `rdfs:subClassOf dtou:Conflict`):
+| Type | Cause |
+|------|-------|
+| `dtou:UnmatchedExpectation` | App expects a tag the data doesn't have |
+| `dtou:UnsatisfiedRequirement` | App fails to provide what the data requires |
+| `dtou:ProhibitedUse` | App uses data for a prohibited action |
+
+---
+
 ## Cross-Task Consistency Points
 
+### Namespace scheme
+All files use the following namespaces:
+
+| Prefix | URI | Used for |
+|--------|-----|---------|
+| `dtou:` | `urn:dtou:core#` | DToU core types and predicates |
+| `demo:` | `urn:dtou-demo:` | Internal policy node identifiers |
+| `vocab:` | `urn:dtou-demo:vocab#` | Shared demo vocabulary (concepts, app names) |
+| `app:` | `urn:dtou-demo:app#` | App-specific node identifiers |
+
 ### Shared vocabulary URIs
-The following URIs must be identical across all files — do not change them:
+The following concept URIs must be identical across all files — do not change them.
+They are defined in `fixtures/vocab.ttl` (as `rdfs:subClassOf dpv:Purpose`) and
+referenced by both the data policies and app policies:
 
-| Concept | PurposeExpectation resource | `:name` (concept URI) |
-|---------|----------------------------|-----------------------|
-| Health suggestions | `http://example.org/dtou-demo/vocab#provide-health-suggestions` | `urn:dtou-demo:purpose-health-suggestions` |
-| Commercial research | `http://example.org/dtou-demo/vocab#commercial-research` | `urn:dtou-demo:purpose-commercial-research` |
+| Concept | Concept URI (`dtou:descriptor` / `dtou:class`) |
+|---------|-----------------------------------------------|
+| Health suggestions | `urn:dtou-demo:vocab#health-suggestions` |
+| Commercial research | `urn:dtou-demo:vocab#commercial-research` |
 
-These URIs appear in: `fixtures/vocab.ttl`, all six `.dtou` files, all three
-`fixtures/app-policies/*.ttl` files, and the TypeScript constants in `vocab.ts`.
+Each app additionally uses a local `PurposeExpectation` node URI (with `app:` prefix
+in Turtle fixtures, or `urn:dtou-demo:vocab#purpose-*` in the TypeScript constants via
+`PURPOSE_HEALTH_SUGGESTIONS` / `PURPOSE_COMMERCIAL_RESEARCH`). These PE node URIs are
+defined locally within each app policy, not in `vocab.ttl`.
+
+These concept URIs appear in: `fixtures/vocab.ttl` (definitions), all `container.dtou`
+files (`dtou:class`), all three `fixtures/app-policies/*.ttl` files (`dtou:descriptor`),
+and the TypeScript `CONCEPT_*` constants in `vocab.ts`.
 
 ### App policy URIs
-| App | `:name` URI (AppPolicy) | Used in… |
-|-----|------------------------|----------|
-| App A | `http://example.org/app#DailyWellnessJournal` | app-a policy Turtle + TypeScript |
-| App B | `http://example.org/app#HealthInsights` | app-b policy Turtle + TypeScript |
-| App C | `http://example.org/app#HealthSharePro` | app-c policy Turtle + TypeScript + Alice's prohibition (irrelevant — prohibition has no `:app`) |
+| App | `dtou:name` URI (AppPolicy) | Used in… |
+|-----|-----------------------------|----------|
+| App A | `urn:dtou-demo:app#DailyWellnessJournal` | app-a policy Turtle + TypeScript |
+| App B | `urn:dtou-demo:app#HealthInsights` | app-b policy Turtle + TypeScript |
+| App C | `urn:dtou-demo:app#HealthSharePro` | app-c policy Turtle + TypeScript |
 
 ### `fixtures/app-policies/` directory
 Tasks 04, 05, 06 each create a Turtle file in `fixtures/app-policies/`. This
@@ -75,10 +112,9 @@ and any app-specific state (e.g. task-05 adds `report` and `saved` state on top)
 
 ## Default Behaviour
 
-- All apps default to `VITE_DTOU_MOCK=true` — the demo works without any server.
-- Copy `.env.example` → `.env` to change settings.
-- To test against a real server: set `VITE_DTOU_MOCK=false` and `VITE_SOLID_SERVER`
-  to your CSS+solid-dtou instance URL.
+- All apps have `.env` set to `VITE_DTOU_MOCK=false` and `VITE_SOLID_SERVER=http://localhost:3000`.
+- For offline demo (no server): set `VITE_DTOU_MOCK=true` in each app's `.env`.
+- Data policies are uploaded to the live server via `fixtures/setup.sh`.
 
 ---
 
