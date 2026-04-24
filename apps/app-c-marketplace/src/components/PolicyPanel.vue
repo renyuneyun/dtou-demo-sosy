@@ -214,9 +214,9 @@ function reset() {
                 <p v-if="step2FetchError" class="text-xs text-red-600">{{ step2FetchError }}</p>
                 <div v-if="step2Policies" class="space-y-1">
                   <details v-for="dp in step2Policies" :key="dp.resourceUrl" class="text-xs">
-                    <summary class="cursor-pointer text-blue-600 hover:text-blue-800 select-none flex items-center gap-2">
+                    <summary class="cursor-pointer text-blue-600 hover:text-blue-800 select-none flex items-start gap-2 flex-wrap">
                       Alice's data policy
-                      <span class="font-mono text-gray-400">{{ dp.resourceUrl }}.dtou</span>
+                      <span class="font-mono text-gray-400 break-all">{{ dp.resourceUrl }}.dtou</span>
                       <span class="font-mono px-1.5 py-0.5 rounded font-semibold"
                             :class="dp.status >= 200 && dp.status < 300
                               ? 'bg-green-100 text-green-700'
@@ -365,7 +365,7 @@ function reset() {
           </thead>
           <tbody>
             <tr v-for="input in props.appPolicy.inputs" :key="input.uri">
-              <td class="p-1.5 border border-gray-200 font-mono text-gray-500 truncate max-w-[12rem]">
+              <td class="p-1.5 border border-gray-200 font-mono text-gray-500 break-all">
                 {{ input.dataUri }}
               </td>
               <td class="p-1.5 border border-gray-200">{{ input.port.name }}</td>
