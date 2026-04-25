@@ -18,13 +18,14 @@ import { getMockCompatibility } from './mock.js';
  */
 export async function checkPolicy(
   policy: AppPolicy,
-  accessToken?: string,
+  fetchFn?: typeof fetch,
 ): Promise<CompatibilityResult> {
   if (MOCK_MODE) {
     return getMockCompatibility(policy.appNameUri);
   }
 
   const policyTurtle = serializeAppPolicy(policy);
+  const _fetch = fetchFn ?? fetch;
 
   // NOTE: The exact endpoint path and request format must be verified against
   // the live solid-dtou server implementation. The path '/dtou' is a best
@@ -32,12 +33,9 @@ export async function checkPolicy(
   // for the actual endpoint.
   const endpoint = `${SOLID_SERVER}/dtou`;
 
-  const registerRes = await fetch(endpoint, {
+  const registerRes = await _fetch(endpoint, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ policy: policyTurtle }),
   });
 
@@ -45,11 +43,8 @@ export async function checkPolicy(
     throw new Error(`DToU server returned ${registerRes.status}: ${await registerRes.text()}`);
   }
 
-  const complianceRes = await fetch(`${SOLID_SERVER}/dtou/compliance`, {
+  const complianceRes = await _fetch(`${SOLID_SERVER}/dtou/compliance`, {
     method: 'GET',
-    headers: {
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
   });
 
   if (!complianceRes.ok) {
@@ -67,19 +62,16 @@ export async function checkPolicy(
  */
 export async function submitAppPolicy(
   policy: AppPolicy,
-  accessToken?: string,
+  fetchFn?: typeof fetch,
 ): Promise<{ turtle: string; status: number }> {
   const turtle = serializeAppPolicy(policy);
   if (MOCK_MODE) {
     await new Promise<void>(r => setTimeout(r, 150));
     return { turtle, status: 200 };
   }
-  const res = await fetch(`${SOLID_SERVER}/dtou`, {
+  const res = await (fetchFn ?? fetch)(`${SOLID_SERVER}/dtou`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ policy: turtle }),
   });
   if (!res.ok) throw new Error(`DToU server returned ${res.status}: ${await res.text()}`);
@@ -94,7 +86,7 @@ export async function submitAppPolicy(
  */
 export async function fetchComplianceResult(
   policy: AppPolicy,
-  accessToken?: string,
+  fetchFn?: typeof fetch,
 ): Promise<{ raw: string; result: CompatibilityResult; status: number }> {
   if (MOCK_MODE) {
     await new Promise<void>(r => setTimeout(r, 200));
@@ -104,11 +96,8 @@ export async function fetchComplianceResult(
       : result.conflicts.map(c => `# ${c.type}: ${c.detail}`).join('\n');
     return { raw: mockRaw, result, status: 200 };
   }
-  const res = await fetch(`${SOLID_SERVER}/dtou/compliance`, {
+  const res = await (fetchFn ?? fetch)(`${SOLID_SERVER}/dtou/compliance`, {
     method: 'GET',
-    headers: {
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-    },
   });
   if (!res.ok) throw new Error(`DToU server returned ${res.status}: ${await res.text()}`);
   const raw = await res.text();

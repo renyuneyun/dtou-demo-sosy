@@ -26,13 +26,13 @@ const MOCK_DATA: HealthData = {
   ],
 };
 
-export function useHealthData() {
+export function useHealthData(fetchFn?: () => typeof fetch | undefined) {
   const data = ref<HealthData | null>(null);
   const error = ref<string | null>(null);
 
   async function loadData() {
     try {
-      data.value = MOCK_MODE ? MOCK_DATA : await fetchRealHealthData();
+      data.value = MOCK_MODE ? MOCK_DATA : await fetchRealHealthData(fetchFn?.());
     } catch (e: any) {
       error.value = e.message ?? 'Unknown error';
     }
@@ -41,7 +41,7 @@ export function useHealthData() {
   return { data, error, loadData };
 }
 
-async function fetchRealHealthData(): Promise<HealthData> {
+async function fetchRealHealthData(_fetchFn?: typeof fetch): Promise<HealthData> {
   // TODO: fetch and parse the actual .ttl resources from the Pod using n3
   return MOCK_DATA;
 }

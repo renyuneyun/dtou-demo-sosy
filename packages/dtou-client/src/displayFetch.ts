@@ -31,6 +31,7 @@ demo:health-data-policy a dtou:DataPolicy ;
  */
 export async function fetchDataPolicyForDisplay(
   resourceUrl: string,
+  fetchFn?: typeof fetch,
 ): Promise<DataPolicyDisplay> {
   if (MOCK_MODE) {
     return { resourceUrl, raw: MOCK_DTOU_TURTLE, status: 200 };
@@ -38,7 +39,7 @@ export async function fetchDataPolicyForDisplay(
 
   const policyUrl = `${resourceUrl}.dtou`;
   try {
-    const res = await fetch(policyUrl, { headers: { Accept: 'text/turtle' } });
+    const res = await (fetchFn ?? fetch)(policyUrl, { headers: { Accept: 'text/turtle' } });
     const raw = res.ok ? await res.text() : `# Could not fetch: ${policyUrl}`;
     return { resourceUrl, raw, status: res.status };
   } catch {

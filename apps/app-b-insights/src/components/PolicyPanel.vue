@@ -9,6 +9,7 @@ import {
 
 const props = defineProps<{
   appPolicy: AppPolicy;
+  fetchFn?: typeof fetch;
 }>();
 
 const emit = defineEmits<{
@@ -39,7 +40,7 @@ async function executeStep(n: number) {
     switch (n) {
       case 1: {
         // POST /dtou — submit app policy; returns the turtle sent
-        const r1 = await submitAppPolicy(props.appPolicy);
+        const r1 = await submitAppPolicy(props.appPolicy, props.fetchFn);
         step1Turtle.value = r1.turtle;
         step1Status.value = r1.status;
         currentStep.value = 1;
@@ -52,7 +53,7 @@ async function executeStep(n: number) {
       }
       case 3: {
         // GET /dtou/compliance — retrieve reasoning result
-        const r3 = await fetchComplianceResult(props.appPolicy);
+        const r3 = await fetchComplianceResult(props.appPolicy, props.fetchFn);
         step3Raw.value = r3.raw;
         step3Status.value = r3.status;
         compatResult.value = r3.result;
@@ -78,7 +79,7 @@ async function fetchDataPolicyForStep2() {
   step2FetchLoading.value = true;
   step2FetchError.value = null;
   try {
-    const display = await fetchDataPolicyForDisplay(props.appPolicy.inputs[0].dataUri);
+    const display = await fetchDataPolicyForDisplay(props.appPolicy.inputs[0].dataUri, props.fetchFn);
     step2Policies.value = [display];
   } catch (e: any) {
     step2FetchError.value = e.message ?? 'Unknown error';

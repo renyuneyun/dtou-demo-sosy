@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useSessionStore } from 'solid-helper-vue';
 import { useHealthData } from './composables/useHealthData';
 import PolicyPanel from './components/PolicyPanel.vue';
 import HealthContextSidebar from './components/HealthContextSidebar.vue';
@@ -14,7 +15,24 @@ const MOCK_JOURNAL: Record<string, string> = {
     'Long day of meetings. Skipped lunch, probably why energy was low. Need to plan better tomorrow.',
 };
 
-const { data, error, loadData } = useHealthData();
+const IDP = 'http://localhost:3000';
+const REDIRECT_URL = window.location.href;
+
+const sessionStore = useSessionStore();
+onMounted(() => sessionStore.handleRedirectAfterLogin(REDIRECT_URL));
+
+const isLoggedIn = computed(() => sessionStore.isLoggedIn);
+const webId = computed(() => sessionStore.webid);
+const fetchFn = computed(() => sessionStore.session?.fetch as typeof fetch | undefined);
+
+async function login() {
+  await sessionStore.login(IDP, REDIRECT_URL, 'DToU Demo – Daily Wellness Journal');
+}
+async function logout() {
+  await sessionStore.logout();
+}
+
+const { data, error, loadData } = useHealthData(() => fetchFn.value);
 const compatibility = ref<CompatibilityResult | null>(null);
 const selectedDate = ref('2024-03-01');
 
@@ -26,13 +44,35 @@ function onResult(result: CompatibilityResult) {
 
 <template>
   <div class="min-h-screen bg-amber-50">
-    <header class="bg-amber-600 text-white px-6 py-4 shadow">
-      <h1 class="text-2xl font-bold">Daily Wellness Journal</h1>
-      <p class="text-sm opacity-75">Your reflections, enriched by your health context · Solid-DToU</p>
+    <header class="bg-amber-600 text-white px-6 py-4 shadow flex items-center gap-4">
+      <div class="flex-1">
+        <h1 class="text-2xl font-bold">Daily Wellness Journal</h1>
+        <p class="text-sm opacity-75">Your reflections, enriched by your health context · Solid-DToU</p>
+      </div>
+      <div class="flex items-center gap-3 text-sm shrink-0">
+        <template v-if="isLoggedIn">
+          <span class="opacity-75 text-xs truncate max-w-48" :title="webId">
+            {{ webId?.split('/profile')[0].split('/').pop() ?? webId }}
+          </span>
+          <button
+            @click="logout"
+            class="px-3 py-1.5 rounded border border-white/50 hover:bg-amber-700 transition-colors text-xs font-medium"
+          >
+            Logout
+          </button>
+        </template>
+        <button
+          v-else
+          @click="login"
+          class="px-3 py-1.5 rounded bg-white text-amber-700 font-semibold hover:bg-amber-50 transition-colors text-xs"
+        >
+          Login with Solid
+        </button>
+      </div>
     </header>
 
     <main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      <PolicyPanel :app-policy="APP_A_POLICY" @result="onResult" />
+      <PolicyPanel :app-policy="APP_A_POLICY" :fetch-fn="fetchFn" @result="onResult" />
 
       <div v-if="error" class="text-red-600 p-4 bg-red-50 rounded">{{ error }}</div>
 
