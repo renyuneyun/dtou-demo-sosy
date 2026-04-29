@@ -2,8 +2,9 @@
 import { ref, computed, onMounted } from 'vue';
 import { useSessionStore } from 'solid-helper-vue';
 import { useHealthData } from './composables/useHealthData';
-import { generateInsights, type InsightsReport } from './insights';
+import { generateInsights, reportFromTurtle, type InsightsReport } from './insights';
 import { saveReportToPod } from './podWriter';
+import { SOLID_SERVER } from '@dtou-demo/dtou-client';
 import PolicyPanel from './components/PolicyPanel.vue';
 import InsightsCard from './components/InsightsCard.vue';
 import OutputPolicyBadge from './components/OutputPolicyBadge.vue';
@@ -34,6 +35,28 @@ const report = ref<InsightsReport | null>(null);
 const generating = ref(false);
 const saved = ref(false);
 const savedUrls = ref({ reportUrl: '', policyUrl: '' });
+
+const savedReport = ref<InsightsReport | null>(null);
+const loadingReport = ref(false);
+const loadReportError = ref<string | null>(null);
+
+async function handleLoadReport() {
+  loadingReport.value = true;
+  loadReportError.value = null;
+  try {
+    const url = `${SOLID_SERVER}/alice/health/insights/report.ttl`;
+    const res = await (fetchFn.value ?? fetch)(url, { headers: { Accept: 'text/turtle' } });
+    if (!res.ok) throw new Error(`Pod returned ${res.status}`);
+    const turtle = await res.text();
+    const parsed = await reportFromTurtle(turtle, url);
+    if (!parsed) throw new Error('No InsightsReport found in document');
+    savedReport.value = parsed;
+  } catch (e: any) {
+    loadReportError.value = e.message ?? 'Unknown error';
+  } finally {
+    loadingReport.value = false;
+  }
+}
 
 function onResult(result: CompatibilityResult) {
   compatibility.value = result;
@@ -115,6 +138,24 @@ async function handleSave() {
         :report-url="savedUrls.reportUrl"
         :policy-url="savedUrls.policyUrl"
       />
+
+      <!-- Read back saved report from Pod -->
+      <div class="border-t border-gray-200 pt-4 space-y-3">
+        <div class="flex items-center gap-3">
+          <h2 class="text-sm font-semibold text-gray-700">Saved Insights Report</h2>
+          <button
+            @click="handleLoadReport"
+            :disabled="loadingReport"
+            class="px-3 py-1.5 text-xs rounded border border-green-400 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50"
+          >
+            {{ loadingReport ? 'Loading…' : 'Load from Pod' }}
+          </button>
+        </div>
+        <p v-if="loadReportError" class="text-xs text-red-600 bg-red-50 rounded px-3 py-2">
+          {{ loadReportError }}
+        </p>
+        <InsightsCard v-if="savedReport" :report="savedReport" />
+      </div>
     </main>
 
     <footer class="text-center text-xs text-gray-400 py-6">

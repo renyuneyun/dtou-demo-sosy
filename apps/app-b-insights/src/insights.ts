@@ -1,3 +1,5 @@
+import { Parser } from 'n3';
+
 export interface InsightsReport {
   avgHeartRate: number;
   avgSteps: number;
@@ -33,6 +35,38 @@ export function generateInsights(
     avgSleepQuality: avgQuality,
     narrative: parts.join(' '),
     generatedAt: new Date().toISOString(),
+  };
+}
+
+/** Parse a saved report.ttl back into an InsightsReport. Returns null if the document has no report. */
+export async function reportFromTurtle(turtle: string, baseIRI: string): Promise<InsightsReport | null> {
+  const HEALTH = 'urn:dtou-demo:health#';
+  const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+
+  const quads = new Parser({ baseIRI }).parse(turtle);
+  const subj = quads.find(q => q.predicate.value === RDF_TYPE && q.object.value === `${HEALTH}InsightsReport`)?.subject.value;
+  if (!subj) return null;
+
+  const get = (pred: string) => quads.find(q => q.subject.value === subj && q.predicate.value === pred)?.object.value ?? null;
+
+  const avgHeartRate = get(`${HEALTH}avgHeartRate`);
+  const avgSteps = get(`${HEALTH}avgSteps`);
+  const totalSteps = get(`${HEALTH}totalSteps`);
+  const avgSleepHours = get(`${HEALTH}avgSleepHours`);
+  const avgSleepQuality = get(`${HEALTH}avgSleepQuality`);
+  const narrative = get(`${HEALTH}narrative`);
+  const generatedAt = get(`${HEALTH}generatedAt`);
+
+  if (!avgHeartRate || !avgSteps || !totalSteps || !avgSleepHours || !avgSleepQuality || !narrative || !generatedAt) return null;
+
+  return {
+    avgHeartRate: parseInt(avgHeartRate, 10),
+    avgSteps: parseInt(avgSteps, 10),
+    totalSteps: parseInt(totalSteps, 10),
+    avgSleepHours: parseFloat(avgSleepHours),
+    avgSleepQuality: parseInt(avgSleepQuality, 10),
+    narrative,
+    generatedAt,
   };
 }
 

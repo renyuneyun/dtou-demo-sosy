@@ -41,6 +41,14 @@ export const APP_B_POLICY: AppPolicy = {
       provides: [],
       downstreams: [],
     },
+    {
+      uri: `${APP}b-input-report`,
+      dataUri: 'http://localhost:3000/alice/health/insights/report.ttl',
+      port: mkPort('port-b-report', 'insightsReportInput'),
+      purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
+      provides: [],
+      downstreams: [],
+    },
   ],
   outputs: [
     {
