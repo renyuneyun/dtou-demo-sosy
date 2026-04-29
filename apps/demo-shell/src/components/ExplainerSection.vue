@@ -13,9 +13,9 @@
       negotiation and no manual review by the user.
     </p>
     <p>
-      The key advance over existing approaches (WAC/ACP, SAI, ODRL) is
+      The key advance over existing approaches is
       <strong class="text-blue-700">non-coordination</strong>: both sides write
-      their policies independently, using shared ontological concepts (shared vocabulary URIs).
+      their policies independently; only ontological concepts need to be shared (shared vocabulary URIs; also supports ontological reasoning).
       Data produced by an app also receives a
       <strong class="text-blue-700">derived policy</strong> computed from the input
       data policies — privacy constraints propagate through data pipelines automatically.
