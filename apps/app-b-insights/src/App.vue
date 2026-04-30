@@ -78,8 +78,8 @@ async function handleSave() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-green-50">
-    <header class="bg-green-600 text-white px-6 py-4 shadow flex items-center gap-4">
+  <div class="min-h-screen bg-teal-50">
+    <header class="bg-teal-600 text-white px-6 py-4 shadow flex items-center gap-4">
       <div class="flex-1">
         <h1 class="text-2xl font-bold">Health Insights</h1>
         <p class="text-sm opacity-75">Analyse your health trends · Save to your Pod · Solid-DToU</p>
@@ -91,7 +91,7 @@ async function handleSave() {
           </span>
           <button
             @click="logout"
-            class="px-3 py-1.5 rounded border border-white/50 hover:bg-green-700 transition-colors text-xs font-medium"
+            class="px-3 py-1.5 rounded border border-white/50 hover:bg-teal-700 transition-colors text-xs font-medium"
           >
             Logout
           </button>
@@ -99,7 +99,7 @@ async function handleSave() {
         <button
           v-else
           @click="login"
-          class="px-3 py-1.5 rounded bg-white text-green-700 font-semibold hover:bg-green-50 transition-colors text-xs"
+          class="px-3 py-1.5 rounded bg-white text-teal-700 font-semibold hover:bg-teal-50 transition-colors text-xs"
         >
           Login with Solid
         </button>
@@ -115,7 +115,7 @@ async function handleSave() {
       <div v-if="data" class="flex items-center gap-3">
         <button
           @click="handleGenerate"
-          class="px-5 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
+          class="px-5 py-2 bg-teal-600 text-white rounded shadow hover:bg-teal-700"
         >
           {{ report ? 'Regenerate' : 'Generate Insights' }}
         </button>
@@ -132,7 +132,7 @@ async function handleSave() {
         <button
           @click="handleSave"
           :disabled="saving"
-          class="px-5 py-2 bg-green-700 text-white rounded shadow hover:bg-green-800 disabled:opacity-50"
+          class="px-5 py-2 bg-teal-700 text-white rounded shadow hover:bg-teal-800 disabled:opacity-50"
         >
           {{ saving ? 'Deriving policy & saving…' : 'Save to Pod (with derived policy)' }}
         </button>

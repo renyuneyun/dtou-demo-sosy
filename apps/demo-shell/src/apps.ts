@@ -28,7 +28,7 @@ export const APPS: AppEntry[] = [
     name: 'Health Insights',
     tagline: 'Health analytics — writes insights report back to Pod',
     url: 'http://localhost:5102',
-    headerColor: 'bg-green-600',
+    headerColor: 'bg-teal-600',
     result: 'allowed',
     resultReason:
       'Same purpose (provide-health-suggestions), no prohibition match. ' +
@@ -40,7 +40,7 @@ export const APPS: AppEntry[] = [
     name: 'HealthShare Pro™',
     tagline: 'Commercial data platform — aggregates and shares with partners',
     url: 'http://localhost:5103',
-    headerColor: 'bg-rose-700',
+    headerColor: 'bg-orange-600',
     result: 'denied',
     resultReason:
       'App declares purpose vocab:commercial-research. ' +

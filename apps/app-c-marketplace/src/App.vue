@@ -27,8 +27,8 @@ const compatibility = ref<CompatibilityResult | null>(null);
 </script>
 
 <template>
-  <div class="min-h-screen bg-rose-50">
-    <header class="bg-rose-700 text-white px-6 py-4 shadow flex items-center gap-4">
+  <div class="min-h-screen bg-orange-50">
+    <header class="bg-orange-600 text-white px-6 py-4 shadow flex items-center gap-4">
       <div class="flex-1">
         <h1 class="text-2xl font-bold">HealthShare Pro™</h1>
         <p class="text-sm opacity-75">Your health data powers tomorrow's medical breakthroughs.</p>
@@ -40,7 +40,7 @@ const compatibility = ref<CompatibilityResult | null>(null);
           </span>
           <button
             @click="logout"
-            class="px-3 py-1.5 rounded border border-white/50 hover:bg-rose-800 transition-colors text-xs font-medium"
+            class="px-3 py-1.5 rounded border border-white/50 hover:bg-orange-700 transition-colors text-xs font-medium"
           >
             Logout
           </button>
@@ -48,7 +48,7 @@ const compatibility = ref<CompatibilityResult | null>(null);
         <button
           v-else
           @click="login"
-          class="px-3 py-1.5 rounded bg-white text-rose-700 font-semibold hover:bg-rose-50 transition-colors text-xs"
+          class="px-3 py-1.5 rounded bg-white text-orange-700 font-semibold hover:bg-orange-50 transition-colors text-xs"
         >
           Login with Solid
         </button>

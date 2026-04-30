@@ -40,26 +40,26 @@ async function fetchFromPod() {
 
     <!-- Confirmation bar -->
     <div class="rounded-lg bg-gray-800 text-white px-5 py-3 flex items-center gap-3 text-sm">
-      <span class="text-teal-400 text-lg leading-none">✓</span>
+      <span class="text-green-400 text-lg leading-none">✓</span>
       <span class="font-semibold">Saved to Alice's Solid Pod</span>
       <div class="ml-auto flex gap-3 text-xs font-mono">
         <a :href="props.reportUrl" target="_blank"
-           class="text-teal-300 underline hover:text-teal-100">report.ttl</a>
+           class="text-green-300 underline hover:text-green-100">report.ttl</a>
         <a :href="props.policyUrl" target="_blank"
            class="text-indigo-300 underline hover:text-indigo-100">report.ttl.dtou</a>
       </div>
     </div>
 
     <!-- App-generated: report.ttl -->
-    <div class="rounded-lg border border-teal-200 overflow-hidden">
-      <div class="px-4 py-2 bg-teal-600 text-white flex items-center gap-2">
-        <span class="text-xs font-bold uppercase tracking-wide bg-teal-800 rounded px-2 py-0.5">App</span>
+    <div class="rounded-lg border border-green-200 overflow-hidden">
+      <div class="px-4 py-2 bg-green-600 text-white flex items-center gap-2">
+        <span class="text-xs font-bold uppercase tracking-wide bg-green-800 rounded px-2 py-0.5">App</span>
         <span class="text-sm font-medium">report.ttl — written by this app</span>
       </div>
       <div class="bg-white px-4 py-3">
         <details class="text-xs">
-          <summary class="cursor-pointer select-none flex items-center gap-2 text-teal-700 hover:text-teal-900 font-medium">
-            <span class="font-mono bg-teal-50 border border-teal-300 rounded px-1.5 py-0.5">report.ttl</span>
+          <summary class="cursor-pointer select-none flex items-center gap-2 text-green-700 hover:text-green-900 font-medium">
+            <span class="font-mono bg-green-50 border border-green-300 rounded px-1.5 py-0.5">report.ttl</span>
             <span class="text-gray-400 font-normal">{{ !MOCK_MODE && podReportTurtle ? 'read from Pod' : 'as saved' }}</span>
           </summary>
           <pre class="mt-2 bg-slate-900 text-slate-200 rounded p-3 overflow-x-auto leading-relaxed max-h-52">{{ podReportTurtle ?? props.savedReportTurtle }}</pre>

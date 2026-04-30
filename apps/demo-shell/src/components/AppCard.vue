@@ -6,6 +6,7 @@ const props = defineProps<{ app: AppEntry }>();
 <template>
   <div class="bg-white rounded-lg shadow overflow-hidden flex flex-col">
     <!-- Coloured header strip -->
+    <!-- Tailwind safelist: bg-amber-600 bg-teal-600 bg-orange-600 -->
     <div :class="[props.app.headerColor, 'text-white px-4 py-3']">
       <h3 class="font-bold text-lg">{{ props.app.name }}</h3>
       <p class="text-xs opacity-80">{{ props.app.tagline }}</p>
