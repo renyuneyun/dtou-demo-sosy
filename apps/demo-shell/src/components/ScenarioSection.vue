@@ -9,8 +9,8 @@
         </p>
         <p>
           She writes a <strong>data policy</strong> once:
-          <em>"Any app declaring <code class="bg-amber-100 px-1 rounded">vocab:commercial-research</code>
-          as its purpose may not use my health data."</em>
+          <em>"Any app may use her healthcare data; however, apps may not use it for
+          <code class="bg-amber-100 px-1 rounded">vocab:commercial-research</code> purposes."</em>
         </p>
         <p>
           Three apps — a journal, an analytics tool, and a commercial platform —

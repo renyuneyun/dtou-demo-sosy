@@ -24,7 +24,7 @@ const stepError = ref<string | null>(null);
 // Real data from each step
 const step1Turtle = ref<string | null>(null);
 const step1Status = ref<number | null>(null);
-// Step 2 is server-side — optional display fetch only
+// Step 2 is automatic — no client API call needed
 const step2Policies = ref<DataPolicyDisplay[] | null>(null);
 const step2FetchLoading = ref(false);
 const step2FetchError = ref<string | null>(null);
@@ -157,7 +157,7 @@ function reset() {
               <template v-else>{{ currentStep >= 1 ? '✓' : '1' }}</template>
             </span>
             <div class="flex-1 min-w-0">
-              <p class="font-medium text-gray-700">App submits usage policy to DToU service</p>
+              <p class="font-medium text-gray-700">App submits its app policy to DToU service</p>
               <p v-if="currentStep >= 1" class="mt-0.5 text-xs text-gray-500 flex items-center gap-2 flex-wrap">
                 Serialized as RDF/Turtle and sent via
                 <code class="font-mono bg-gray-100 px-1 rounded">POST /dtou</code>.
@@ -172,7 +172,7 @@ function reset() {
               <div v-if="step1Turtle" class="mt-2">
                 <details class="text-xs">
                   <summary class="cursor-pointer text-blue-600 hover:text-blue-800 select-none">
-                    View submitted policy Turtle
+                    View submitted app policy (Turtle)
                   </summary>
                   <pre class="mt-1 bg-slate-900 text-slate-200 rounded p-3 overflow-x-auto leading-relaxed max-h-48">{{ step1Turtle }}</pre>
                 </details>
@@ -180,7 +180,7 @@ function reset() {
             </div>
           </li>
 
-          <!-- Step 2: Server fetches data policies (server-side, optional display) -->
+          <!-- Step 2: DToU component automatically reads data policies (no client call needed) -->
           <li class="flex gap-3" :class="currentStep < 2 ? 'opacity-40' : ''">
             <span class="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border"
                   :class="currentStep >= 2
@@ -190,8 +190,8 @@ function reset() {
             </span>
             <div class="flex-1 min-w-0">
               <p class="font-medium text-gray-700 flex items-center gap-2">
-                DToU service fetches Alice's data policies from Pod
-                <span class="text-xs font-normal text-gray-400 bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5">server-side</span>
+                DToU component reads Alice's data policies from Pod
+                <span class="text-xs font-normal text-gray-400 bg-gray-100 border border-gray-300 rounded px-1.5 py-0.5">automatic</span>
               </p>
               <p v-if="currentStep >= 2" class="mt-0.5 text-xs text-gray-500">
                 The server reads co-located
@@ -232,7 +232,7 @@ function reset() {
             </div>
           </li>
 
-          <!-- Step 3: N3 reasoner -->
+          <!-- Step 3: DToU policy engine -->
           <li class="flex gap-3" :class="currentStep < 3 && !(stepLoading && currentStep === 2) ? 'opacity-40' : ''">
             <span class="mt-0.5 shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold border"
                   :class="currentStep > 3
@@ -250,9 +250,9 @@ function reset() {
               <template v-else>{{ currentStep >= 3 ? '✓' : '3' }}</template>
             </span>
             <div class="flex-1 min-w-0">
-              <p class="font-medium text-gray-700">N3 reasoner checks compatibility</p>
+              <p class="font-medium text-gray-700">DToU policy engine checks compatibility</p>
               <p v-if="currentStep >= 3" class="mt-0.5 text-xs text-gray-500 flex items-center gap-2 flex-wrap">
-                EYE N3 reasoner invoked server-side. Result retrieved via
+                DToU policy engine runs inside the Solid server. Result retrieved via
                 <code class="font-mono bg-gray-100 px-1 rounded">GET /dtou/compliance</code>.
                 <span v-if="step3Status !== null"
                       class="font-mono px-1.5 py-0.5 rounded text-xs font-semibold"
