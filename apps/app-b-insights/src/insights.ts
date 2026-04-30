@@ -70,6 +70,44 @@ export async function reportFromTurtle(turtle: string, baseIRI: string): Promise
   };
 }
 
+/**
+ * Mock derived DToU policy for the insights report.
+ * In real mode the DToU server computes this; here we show the expected output:
+ * full inheritance from the three health-data input policies (no refinements).
+ */
+export const MOCK_DERIVED_POLICY_TURTLE = `\
+@prefix dtou:  <urn:dtou:core#> .
+@prefix demo:  <urn:dtou-demo:> .
+@prefix vocab: <urn:dtou-demo:vocab#> .
+
+# Derived by the DToU reasoner from:
+#   heartRateInput · stepsInput · sleepInput
+# Derivation: full inheritance (refinements: [])
+
+demo:data-insights-report a dtou:Data ;
+    dtou:uri  <http://localhost:3000/alice/health/insights/report.ttl> ;
+    dtou:policy demo:derived-insights-policy .
+
+demo:attr-health-suggest a dtou:Attribute ;
+    dtou:name  demo:health-suggest-attr-name ;
+    dtou:class vocab:health-suggestions ;
+    dtou:value vocab:nil .
+
+demo:tagging-health-suggest a dtou:PurposeTag ;
+    dtou:attribute_ref demo:attr-health-suggest .
+
+demo:prohibition-commercial a dtou:Prohibition ;
+    dtou:mode dtou:Use ;
+    dtou:activation_condition [
+        dtou:purpose vocab:commercial-research
+    ] .
+
+demo:derived-insights-policy a dtou:DataPolicy ;
+    dtou:attribute   demo:attr-health-suggest ;
+    dtou:tagging     demo:tagging-health-suggest ;
+    dtou:prohibition demo:prohibition-commercial .
+`;
+
 /** Serialize the report as Turtle for saving to the Pod */
 export function reportToTurtle(report: InsightsReport): string {
   return `@prefix health: <urn:dtou-demo:health#> .

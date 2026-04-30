@@ -105,6 +105,30 @@ export async function fetchComplianceResult(
 }
 
 /**
+ * Step after compliance — fetch the derived DToU policy for a specific output port.
+ *
+ * The server computes the output policy by inheriting from the input data policies
+ * and applying any refinements declared in the app policy's output spec.
+ *
+ * @param portName  The dtou:name value of the output port (e.g. "insightsOutput")
+ * @param outputUrl The URL where the output resource will be stored (used by the server
+ *                  to mint the derived policy's dtou:uri)
+ */
+export async function fetchDerivedPolicy(
+  portName: string,
+  outputUrl: string,
+  fetchFn?: typeof fetch,
+): Promise<string> {
+  if (MOCK_MODE) return '';
+  const res = await (fetchFn ?? fetch)(`${SOLID_SERVER}/dtou/derived-policies/${portName}`, {
+    method: 'POST',
+    body: JSON.stringify({ url: outputUrl }),
+  });
+  if (!res.ok) throw new Error(`Derived policy server returned ${res.status}: ${await res.text()}`);
+  return res.text();
+}
+
+/**
  * Parse the server's reasoning result Turtle into a CompatibilityResult.
  *
  * The server returns Turtle with conflict triples using urn:dtou:core# namespace.

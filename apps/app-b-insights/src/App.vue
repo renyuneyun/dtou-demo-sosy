@@ -2,17 +2,20 @@
 import { ref, computed, onMounted } from 'vue';
 import { useSessionStore } from 'solid-helper-vue';
 import { useHealthData } from './composables/useHealthData';
-import { generateInsights, reportFromTurtle, type InsightsReport } from './insights';
+import { generateInsights, reportToTurtle, MOCK_DERIVED_POLICY_TURTLE, type InsightsReport } from './insights';
 import { saveReportToPod } from './podWriter';
-import { SOLID_SERVER } from '@dtou-demo/dtou-client';
 import PolicyPanel from './components/PolicyPanel.vue';
 import InsightsCard from './components/InsightsCard.vue';
 import OutputPolicyBadge from './components/OutputPolicyBadge.vue';
 import { APP_B_POLICY } from './policy';
+import { fetchDerivedPolicy, MOCK_MODE, SOLID_SERVER } from '@dtou-demo/dtou-client';
 import type { CompatibilityResult } from '@dtou-demo/dtou-client';
 
 const IDP = 'http://localhost:3000';
 const REDIRECT_URL = window.location.href;
+
+const OUTPUT_PORT_NAME = APP_B_POLICY.outputs[0].port.name; // 'insightsOutput'
+const OUTPUT_URL = `${SOLID_SERVER}/alice/health/insights/report.ttl`;
 
 const sessionStore = useSessionStore();
 onMounted(() => sessionStore.handleRedirectAfterLogin(REDIRECT_URL));
@@ -31,32 +34,14 @@ async function logout() {
 const { data, error, loadData } = useHealthData(() => fetchFn.value);
 const compatibility = ref<CompatibilityResult | null>(null);
 
+// derived policy: updated from server after compliance check, fallback to mock
+const derivedPolicyTurtle = ref<string>(MOCK_DERIVED_POLICY_TURTLE);
+
 const report = ref<InsightsReport | null>(null);
-const generating = ref(false);
+const reportTurtle = ref<string | null>(null);
+const saving = ref(false);
 const saved = ref(false);
 const savedUrls = ref({ reportUrl: '', policyUrl: '' });
-
-const savedReport = ref<InsightsReport | null>(null);
-const loadingReport = ref(false);
-const loadReportError = ref<string | null>(null);
-
-async function handleLoadReport() {
-  loadingReport.value = true;
-  loadReportError.value = null;
-  try {
-    const url = `${SOLID_SERVER}/alice/health/insights/report.ttl`;
-    const res = await (fetchFn.value ?? fetch)(url, { headers: { Accept: 'text/turtle' } });
-    if (!res.ok) throw new Error(`Pod returned ${res.status}`);
-    const turtle = await res.text();
-    const parsed = await reportFromTurtle(turtle, url);
-    if (!parsed) throw new Error('No InsightsReport found in document');
-    savedReport.value = parsed;
-  } catch (e: any) {
-    loadReportError.value = e.message ?? 'Unknown error';
-  } finally {
-    loadingReport.value = false;
-  }
-}
 
 function onResult(result: CompatibilityResult) {
   compatibility.value = result;
@@ -65,16 +50,30 @@ function onResult(result: CompatibilityResult) {
 
 function handleGenerate() {
   if (!data.value) return;
-  generating.value = true;
   report.value = generateInsights(data.value.heartRate, data.value.steps, data.value.sleep);
-  generating.value = false;
+  reportTurtle.value = reportToTurtle(report.value);
+  saved.value = false;
+  savedUrls.value = { reportUrl: '', policyUrl: '' };
 }
 
 async function handleSave() {
   if (!report.value) return;
-  const result = await saveReportToPod(report.value, '# derived policy (mock)', fetchFn.value);
-  savedUrls.value = result;
-  saved.value = true;
+  saving.value = true;
+  try {
+    if (!MOCK_MODE) {
+      try {
+        const turtle = await fetchDerivedPolicy(OUTPUT_PORT_NAME, OUTPUT_URL, fetchFn.value);
+        if (turtle.trim()) derivedPolicyTurtle.value = turtle;
+      } catch (e) {
+        console.warn('Could not fetch derived policy from server, using mock:', e);
+      }
+    }
+    const result = await saveReportToPod(report.value, derivedPolicyTurtle.value, fetchFn.value);
+    savedUrls.value = result;
+    saved.value = true;
+  } finally {
+    saving.value = false;
+  }
 }
 </script>
 
@@ -112,50 +111,45 @@ async function handleSave() {
 
       <div v-if="error" class="text-red-600 p-4 bg-red-50 rounded">{{ error }}</div>
 
-      <div v-if="data">
+      <!-- Generate button (visible once data is loaded) -->
+      <div v-if="data" class="flex items-center gap-3">
         <button
           @click="handleGenerate"
-          :disabled="generating"
-          class="px-5 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700 disabled:opacity-50"
+          class="px-5 py-2 bg-green-600 text-white rounded shadow hover:bg-green-700"
         >
-          {{ generating ? 'Generating…' : 'Generate Insights' }}
+          {{ report ? 'Regenerate' : 'Generate Insights' }}
         </button>
       </div>
 
-      <InsightsCard v-if="report" :report="report" />
+      <!-- App-generated: stats + report.ttl preview -->
+      <InsightsCard
+        v-if="report && reportTurtle"
+        :report="report"
+        :report-turtle="reportTurtle"
+      />
 
-      <div v-if="report && !saved">
+      <div v-if="report && !saved" class="flex items-center gap-3">
         <button
           @click="handleSave"
-          class="px-5 py-2 bg-green-700 text-white rounded shadow hover:bg-green-800"
+          :disabled="saving"
+          class="px-5 py-2 bg-green-700 text-white rounded shadow hover:bg-green-800 disabled:opacity-50"
         >
-          Save to Pod (with derived policy)
+          {{ saving ? 'Deriving policy & saving…' : 'Save to Pod (with derived policy)' }}
         </button>
+        <span class="text-xs text-gray-500">
+          The DToU server will derive a policy for the report when saved.
+        </span>
       </div>
 
+      <!-- Pod output: saved content + verify fetch-back -->
       <OutputPolicyBadge
         :shown="saved"
         :report-url="savedUrls.reportUrl"
         :policy-url="savedUrls.policyUrl"
+        :saved-report-turtle="reportTurtle ?? ''"
+        :saved-policy-turtle="derivedPolicyTurtle"
+        :fetch-fn="fetchFn"
       />
-
-      <!-- Read back saved report from Pod -->
-      <div class="border-t border-gray-200 pt-4 space-y-3">
-        <div class="flex items-center gap-3">
-          <h2 class="text-sm font-semibold text-gray-700">Saved Insights Report</h2>
-          <button
-            @click="handleLoadReport"
-            :disabled="loadingReport"
-            class="px-3 py-1.5 text-xs rounded border border-green-400 text-green-700 hover:bg-green-50 transition-colors disabled:opacity-50"
-          >
-            {{ loadingReport ? 'Loading…' : 'Load from Pod' }}
-          </button>
-        </div>
-        <p v-if="loadReportError" class="text-xs text-red-600 bg-red-50 rounded px-3 py-2">
-          {{ loadReportError }}
-        </p>
-        <InsightsCard v-if="savedReport" :report="savedReport" />
-      </div>
     </main>
 
     <footer class="text-center text-xs text-gray-400 py-6">
