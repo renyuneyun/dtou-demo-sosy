@@ -362,6 +362,7 @@ function reset() {
               <th class="text-left p-1.5 border border-gray-200">Input</th>
               <th class="text-left p-1.5 border border-gray-200">Port</th>
               <th class="text-left p-1.5 border border-gray-200">Purpose(s)</th>
+              <th class="text-left p-1.5 border border-gray-200">3rd Parties</th>
             </tr>
           </thead>
           <tbody>
@@ -374,6 +375,18 @@ function reset() {
                 <span v-for="p in input.purposes" :key="p.uri" class="block font-mono text-blue-700"
                       :title="p.name">
                   {{ p.name.split(/[#/]/).pop() }}
+                </span>
+              </td>
+              <td class="p-1.5 border border-gray-200">
+                <span v-if="!input.downstreams.length" class="text-gray-400 italic">none</span>
+                <span v-for="ds in input.downstreams" :key="ds.uri" class="block">
+                  <span class="font-mono text-gray-700" :title="ds.appName">
+                    {{ ds.appName.split(/[#/]/).pop() }}
+                  </span>
+                  <span v-for="p in ds.purposes" :key="p.uri"
+                        class="ml-1 font-mono text-blue-700" :title="p.name">
+                    ({{ p.name.split(/[#/]/).pop() }})
+                  </span>
                 </span>
               </td>
             </tr>

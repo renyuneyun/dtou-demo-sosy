@@ -8,13 +8,17 @@
           <strong>Solid Pod</strong>.
         </p>
         <p>
-          She writes a <strong>data policy</strong> once:
-          <em>"Any app may use her healthcare data; however, apps may not use it for
-          <code class="bg-amber-100 px-1 rounded">vocab:commercial-research</code> purposes."</em>
+          She writes a <strong>data policy</strong> once, with three rules:
+          <em>"Allow all local use not involving third parties;
+          allow third parties with
+          <code class="bg-amber-100 px-1 rounded">vocab:health-suggestions</code> purpose;
+          deny third parties with
+          <code class="bg-amber-100 px-1 rounded">vocab:commercial-research</code> purpose."</em>
         </p>
         <p>
-          Three apps — a journal, an analytics tool, and a commercial platform —
-          each declare their own app policy. The DToU reasoner checks each one
+          Three apps — a local journal, a third-party health analytics tool, and a
+          commercial data platform — each declare their own app policy including any
+          downstream sharing. The DToU reasoner checks each one
           <strong>automatically</strong>, before any data is accessed.
         </p>
       </div>

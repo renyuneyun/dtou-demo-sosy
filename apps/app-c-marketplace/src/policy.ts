@@ -10,46 +10,44 @@ import {
 const APP = 'urn:dtou-demo:app#';
 const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
+const commercialDownstream = {
+  uri: `${APP}c-downstream-commercial`,
+  appName: `${APP}CommercialResearchFirm`,
+  purposes: [{ uri: PURPOSE_COMMERCIAL_RESEARCH, name: CONCEPT_COMMERCIAL_RESEARCH }],
+};
+
 export const APP_C_POLICY: AppPolicy = {
   uri: `${APP}HealthShareProPolicy`,
   appNameUri: APP_HEALTHSHARE_PRO,
   appDisplayName: 'HealthShare Pro',
   description:
-    'Aggregates your health data with data from other users and shares it with ' +
-    'commercial health research partners. You may earn reward points.',
+    'Aggregates your health data and shares it with a commercial research firm. ' +
+    'The downstream partner declares commercial-research purpose — prohibited ' +
+    'by your data policy. Access is denied.',
   inputs: [
     {
       uri: `${APP}c-input-hr`,
       dataUri: 'http://localhost:3000/alice/health/heartrate/',
       port: mkPort('port-c-hr', 'heartRateInput'),
-      purposes: [
-        { uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS },
-        { uri: PURPOSE_COMMERCIAL_RESEARCH, name: CONCEPT_COMMERCIAL_RESEARCH },
-      ],
+      purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
       provides: [],
-      downstreams: [],
+      downstreams: [commercialDownstream],
     },
     {
       uri: `${APP}c-input-steps`,
       dataUri: 'http://localhost:3000/alice/health/steps/',
       port: mkPort('port-c-steps', 'stepsInput'),
-      purposes: [
-        { uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS },
-        { uri: PURPOSE_COMMERCIAL_RESEARCH, name: CONCEPT_COMMERCIAL_RESEARCH },
-      ],
+      purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
       provides: [],
-      downstreams: [],
+      downstreams: [commercialDownstream],
     },
     {
       uri: `${APP}c-input-sleep`,
       dataUri: 'http://localhost:3000/alice/health/sleep/',
       port: mkPort('port-c-sleep', 'sleepInput'),
-      purposes: [
-        { uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS },
-        { uri: PURPOSE_COMMERCIAL_RESEARCH, name: CONCEPT_COMMERCIAL_RESEARCH },
-      ],
+      purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
       provides: [],
-      downstreams: [],
+      downstreams: [commercialDownstream],
     },
   ],
   outputs: [
@@ -57,16 +55,7 @@ export const APP_C_POLICY: AppPolicy = {
       uri: `${APP}c-output-aggregate`,
       port: mkPort('port-c-out', 'aggregatedOutput'),
       fromPorts: [`${APP}port-c-hr`, `${APP}port-c-steps`, `${APP}port-c-sleep`],
-      refinements: [
-        {
-          type: 'Delete',
-          filter: {
-            name: 'urn:dtou-demo:vocab#health-data-personal',
-            cls: 'personal',
-            value: 'nil',
-          },
-        },
-      ],
+      refinements: [],
     },
   ],
 };

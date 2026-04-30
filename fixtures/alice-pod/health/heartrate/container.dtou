@@ -34,6 +34,7 @@ demo:tagging-health-suggest a dtou:PurposeTag ;
 demo:prohibition-commercial a dtou:Prohibition ;
     dtou:mode dtou:Use ;
     dtou:activation_condition [
+        a dtou:ActivationCondition ;
         dtou:purpose vocab:commercial-research
     ] .
 

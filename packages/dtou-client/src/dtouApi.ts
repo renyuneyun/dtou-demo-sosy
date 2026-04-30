@@ -143,7 +143,8 @@ function parseServerResult(body: string): CompatibilityResult {
     const parser = new Parser();
     const quads = parser.parse(body);
 
-    // Collect type(s) and properties for each conflict subject
+    // Collect rdf:type sets and all other properties for every subject,
+    // including blank nodes (needed to follow dtou:condition → blank node → dtou:purpose).
     const subjectTypes = new Map<string, Set<string>>();
     const subjectProps = new Map<string, Map<string, string>>();
 
@@ -152,10 +153,9 @@ function parseServerResult(body: string): CompatibilityResult {
       if (q.predicate.value === RDF_TYPE) {
         if (!subjectTypes.has(s)) subjectTypes.set(s, new Set());
         subjectTypes.get(s)!.add(q.object.value);
-      } else {
-        if (!subjectProps.has(s)) subjectProps.set(s, new Map());
-        subjectProps.get(s)!.set(q.predicate.value, q.object.value);
       }
+      if (!subjectProps.has(s)) subjectProps.set(s, new Map());
+      subjectProps.get(s)!.set(q.predicate.value, q.object.value);
     }
 
     const conflicts: Conflict[] = [];
@@ -164,17 +164,23 @@ function parseServerResult(body: string): CompatibilityResult {
       const conflictType = CONFLICT_TYPES.find(t => types.has(`${DTOU}${t}`));
       if (!conflictType) continue;
       const props = subjectProps.get(subj) ?? new Map();
-      const descriptor = props.get(`${DTOU}descriptor`) ?? '';
-      const port = props.get(`${DTOU}port`) ?? '';
+
       let detail = '';
       if (conflictType === 'ProhibitedUse') {
-        detail = 'Alice\'s data policy prohibits use for commercial research (any app).';
+        // Follow dtou:condition → blank node → dtou:purpose
+        const conditionId = props.get(`${DTOU}condition`);
+        const condProps = conditionId ? (subjectProps.get(conditionId) ?? new Map()) : new Map();
+        const purpose = condProps.get(`${DTOU}purpose`) ?? '';
+        const purposeName = purpose.split(/[#/]/).pop() ?? purpose;
+        detail = purposeName ? `Prohibited use: purpose "${purposeName}".` : 'Prohibited use.';
       } else if (conflictType === 'UnmatchedExpectation') {
+        const descriptor = props.get(`${DTOU}descriptor`) ?? '';
+        const port = props.get(`${DTOU}port`) ?? '';
         const concept = descriptor.split(/[#/]/).pop() ?? descriptor;
         const portName = port.split(/[#/]/).pop() ?? port;
-        detail = `No Purpose Tagging for "${concept}" found${portName ? ` (port: ${portName})` : ''}.`;
+        detail = `No tagging for "${concept}" found${portName ? ` (port: ${portName})` : ''}.`;
       } else {
-        detail = `Conflict: ${conflictType}`;
+        detail = conflictType;
       }
       conflicts.push({ type: conflictType, detail });
     }
@@ -187,7 +193,6 @@ function parseServerResult(body: string): CompatibilityResult {
       summary: compatible ? 'Compatible.' : `${conflicts.length} conflict(s) detected.`,
     };
   } catch {
-    // Fallback: heuristic inspection if Turtle parsing fails
     const hasConflict = body.includes('Conflict') || body.includes('ProhibitedUse') ||
       body.includes('UnmatchedExpectation');
     return {

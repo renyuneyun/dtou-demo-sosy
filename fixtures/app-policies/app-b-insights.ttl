@@ -9,31 +9,39 @@ app:port-b-sleep  a dtou:Port ; dtou:name "sleepInput" .
 app:port-b-out    a dtou:Port ; dtou:name "insightsOutput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
-app:b-purpose-personal a dtou:PurposeExpectation ;
+app:b-purpose-health a dtou:PurposeExpectation ;
     dtou:descriptor vocab:health-suggestions .
+
+# ── Downstream spec ───────────────────────────────────────────────────────────
+# App B sends processed health data to a third-party health AI service.
+# The downstream declares health-suggestion purpose → Alice's data policy has a
+# matching PurposeTag → no UnmatchedExpectation, no ProhibitedUse → allowed.
+app:b-downstream-health a dtou:DownstreamSpec ;
+    dtou:app_name app:HealthAIService ;
+    dtou:purpose  app:b-purpose-health .
 
 # ── Input specs ──────────────────────────────────────────────────────────────
 app:b-input-hr a dtou:InputSpec ;
     dtou:data <http://localhost:3000/alice/health/heartrate/> ;
     dtou:port app:port-b-hr ;
-    dtou:purpose app:b-purpose-personal .
+    dtou:purpose app:b-purpose-health ;
+    dtou:downstream app:b-downstream-health .
 
 app:b-input-steps a dtou:InputSpec ;
     dtou:data <http://localhost:3000/alice/health/steps/> ;
     dtou:port app:port-b-steps ;
-    dtou:purpose app:b-purpose-personal .
+    dtou:purpose app:b-purpose-health ;
+    dtou:downstream app:b-downstream-health .
 
 app:b-input-sleep a dtou:InputSpec ;
     dtou:data <http://localhost:3000/alice/health/sleep/> ;
     dtou:port app:port-b-sleep ;
-    dtou:purpose app:b-purpose-personal .
+    dtou:purpose app:b-purpose-health ;
+    dtou:downstream app:b-downstream-health .
 
 # ── Output spec ───────────────────────────────────────────────────────────────
-# The insights report derives from all three input ports.
+# Insights report written back to Alice's Pod, derived from all three inputs.
 # No dtou:refinement → all policy attributes from the input policies are inherited.
-# The DToU reasoner will derive output attributes/tags/obligations/prohibitions
-# from the combined input data policies via the OutputAttribute/OutputTagging rules.
-
 app:b-output-insights a dtou:OutputSpec ;
     dtou:port app:port-b-out ;
     dtou:from app:port-b-hr, app:port-b-steps, app:port-b-sleep .

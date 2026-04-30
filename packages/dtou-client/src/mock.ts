@@ -3,27 +3,21 @@ import { APP_HEALTHSHARE_PRO } from './vocab.js';
 
 export function getMockCompatibility(appNameUri: string): CompatibilityResult {
   if (appNameUri === APP_HEALTHSHARE_PRO) {
+    const ports = ['port-c-hr', 'port-c-steps', 'port-c-sleep'];
     return {
       compatible: false,
       conflicts: [
-        {
-          type: 'UnmatchedExpectation',
-          detail:
-            'App "HealthShare Pro" declares purpose vocab:commercial-research, but ' +
-            "Alice's health data has no Purpose Tagging for that concept. " +
-            "Alice has not tagged her data as suitable for commercial research.",
-        },
-        {
-          type: 'ProhibitedUse',
-          detail:
-            "App \"HealthShare Pro\" is additionally prohibited from using Alice's " +
-            'health data with purpose vocab:commercial-research. ' +
-            "Alice's prohibition has no :app restriction — it blocks any app " +
-            'that declares this purpose.',
-        },
+        ...ports.map(p => ({
+          type: 'UnmatchedExpectation' as const,
+          detail: `No tagging for "commercial-research" found (port: ${p}).`,
+        })),
+        ...ports.map(() => ({
+          type: 'ProhibitedUse' as const,
+          detail: 'Prohibited use: purpose "commercial-research".',
+        })),
       ],
       activatedObligations: [],
-      summary: '2 conflicts detected — access denied.',
+      summary: '6 conflict(s) detected.',
     };
   }
   return {

@@ -13,39 +13,42 @@ export const APPS: AppEntry[] = [
   {
     id: 'app-a',
     name: 'Daily Wellness Journal',
-    tagline: 'Journaling app — reads health data as personal context',
+    tagline: 'Journaling app — reads health data locally, no third parties',
     url: 'http://localhost:5101',
     headerColor: 'bg-amber-600',
     result: 'allowed',
     resultReason:
-      'App declares purpose vocab:provide-health-suggestions. ' +
+      'App declares purpose vocab:health-suggestions (local use only, no downstream). ' +
       "Alice's data has a matching Purpose Tagging → no UnmatchedExpectation. " +
-      "Alice's prohibition only covers vocab:commercial-research → no ProhibitedUse.",
-    keyFeature: 'Basic compatibility check — different app type (journal, not health tool)',
+      'No downstream declared → downstream prohibition check is not triggered.',
+    keyFeature: 'Local-only use — no third-party involvement, trivially permitted',
   },
   {
     id: 'app-b',
     name: 'Health Insights',
-    tagline: 'Health analytics — writes insights report back to Pod',
+    tagline: 'Health analytics — uses a third-party health AI service',
     url: 'http://localhost:5102',
     headerColor: 'bg-teal-600',
     result: 'allowed',
     resultReason:
-      'Same purpose (provide-health-suggestions), no prohibition match. ' +
+      'App declares purpose vocab:health-suggestions and a downstream (app:HealthAIService) ' +
+      'with the same health-suggestions purpose. ' +
+      "Alice's PurposeTag covers health-suggestions → downstream check passes. " +
       'Output policy is automatically derived from input policies via OutputSpec :from.',
-    keyFeature: 'Policy derivation — output report inherits Alice\'s constraints automatically',
+    keyFeature: 'Third-party allowed — downstream health purpose matches Alice\'s tagging',
   },
   {
     id: 'app-c',
     name: 'HealthShare Pro™',
-    tagline: 'Commercial data platform — aggregates and shares with partners',
+    tagline: 'Commercial data platform — shares with a commercial research firm',
     url: 'http://localhost:5103',
     headerColor: 'bg-orange-600',
     result: 'denied',
     resultReason:
-      'App declares purpose vocab:commercial-research. ' +
-      "Alice's prohibition blocks any app using that purpose (:app omitted) → ProhibitedUse. " +
-      "Alice also has no commercial-research Tagging → UnmatchedExpectation.",
-    keyFeature: 'Prohibition — honest app policy triggers automatic block before data access',
+      'App declares a downstream (app:CommercialResearchFirm) with purpose ' +
+      'vocab:commercial-research. ' +
+      "Alice's prohibition has no :app restriction — it fires for any app or downstream " +
+      'declaring this purpose → ProhibitedUse.',
+    keyFeature: 'Downstream prohibition — third-party commercial purpose caught automatically',
   },
 ];

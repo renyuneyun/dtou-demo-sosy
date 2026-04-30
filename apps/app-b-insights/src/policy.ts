@@ -8,14 +8,20 @@ import {
 const APP = 'urn:dtou-demo:app#';
 const mkPort = (suffix: string, name: string) => ({ uri: `${APP}${suffix}`, name });
 
+const healthDownstream = {
+  uri: `${APP}b-downstream-health`,
+  appName: `${APP}HealthAIService`,
+  purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
+};
+
 export const APP_B_POLICY: AppPolicy = {
   uri: `${APP}HealthInsightsPolicy`,
   appNameUri: APP_HEALTH_INSIGHTS,
   appDisplayName: 'Health Insights',
   description:
-    'Analyzes your health data and generates a personalized insights report. ' +
-    'The report is written back to your Pod and inherits your data policy ' +
-    'automatically via DToU policy derivation.',
+    'Analyzes your health data using a third-party health AI service and writes ' +
+    'a personalized insights report back to your Pod. The downstream service ' +
+    'declares health-suggestion purpose — permitted by your data policy.',
   inputs: [
     {
       uri: `${APP}b-input-hr`,
@@ -23,7 +29,7 @@ export const APP_B_POLICY: AppPolicy = {
       port: mkPort('port-b-hr', 'heartRateInput'),
       purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
       provides: [],
-      downstreams: [],
+      downstreams: [healthDownstream],
     },
     {
       uri: `${APP}b-input-steps`,
@@ -31,7 +37,7 @@ export const APP_B_POLICY: AppPolicy = {
       port: mkPort('port-b-steps', 'stepsInput'),
       purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
       provides: [],
-      downstreams: [],
+      downstreams: [healthDownstream],
     },
     {
       uri: `${APP}b-input-sleep`,
@@ -39,15 +45,7 @@ export const APP_B_POLICY: AppPolicy = {
       port: mkPort('port-b-sleep', 'sleepInput'),
       purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
       provides: [],
-      downstreams: [],
-    },
-    {
-      uri: `${APP}b-input-report`,
-      dataUri: 'http://localhost:3000/alice/health/insights/report.ttl',
-      port: mkPort('port-b-report', 'insightsReportInput'),
-      purposes: [{ uri: PURPOSE_HEALTH_SUGGESTIONS, name: CONCEPT_HEALTH_SUGGESTIONS }],
-      provides: [],
-      downstreams: [],
+      downstreams: [healthDownstream],
     },
   ],
   outputs: [
@@ -55,7 +53,7 @@ export const APP_B_POLICY: AppPolicy = {
       uri: `${APP}b-output-insights`,
       port: mkPort('port-b-out', 'insightsOutput'),
       fromPorts: [`${APP}port-b-hr`, `${APP}port-b-steps`, `${APP}port-b-sleep`],
-      refinements: [], // no deletion = full policy inheritance
+      refinements: [],
     },
   ],
 };

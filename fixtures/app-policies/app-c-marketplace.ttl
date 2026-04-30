@@ -9,52 +9,47 @@ app:port-c-sleep  a dtou:Port ; dtou:name "sleepInput" .
 app:port-c-out    a dtou:Port ; dtou:name "aggregatedOutput" .
 
 # ── Purpose declarations ─────────────────────────────────────────────────────
-# App C declares BOTH purposes:
-# - vocab:health-suggestions: Alice has a matching Tag → passes that check
-# - vocab:commercial-research: Alice has NO matching Tag (UnmatchedExpectation)
-#                              AND Alice has a Prohibition (ProhibitedUse)
-# Both conflicts fire for the commercial-research purpose.
-
+# App C reads health data for health-suggestion purposes (permitted by Alice's
+# PurposeTag) but its declared downstream shares the data for commercial
+# research — triggering Alice's prohibition.
 app:c-purpose-health a dtou:PurposeExpectation ;
     dtou:descriptor vocab:health-suggestions .
 
 app:c-purpose-commercial a dtou:PurposeExpectation ;
     dtou:descriptor vocab:commercial-research .
 
+# ── Downstream spec ───────────────────────────────────────────────────────────
+# App C forwards data to a commercial research firm with commercial-research
+# purpose.  Alice's prohibition activates on vocab:commercial-research regardless
+# of dtou:app → ProhibitedUse fires for this downstream → access denied.
+app:c-downstream-commercial a dtou:DownstreamSpec ;
+    dtou:app_name app:CommercialResearchFirm ;
+    dtou:purpose  app:c-purpose-commercial .
+
 # ── Input specs ──────────────────────────────────────────────────────────────
 app:c-input-hr a dtou:InputSpec ;
     dtou:data <http://localhost:3000/alice/health/heartrate/> ;
     dtou:port app:port-c-hr ;
-    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
+    dtou:purpose app:c-purpose-health ;
+    dtou:downstream app:c-downstream-commercial .
 
 app:c-input-steps a dtou:InputSpec ;
     dtou:data <http://localhost:3000/alice/health/steps/> ;
     dtou:port app:port-c-steps ;
-    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
+    dtou:purpose app:c-purpose-health ;
+    dtou:downstream app:c-downstream-commercial .
 
 app:c-input-sleep a dtou:InputSpec ;
     dtou:data <http://localhost:3000/alice/health/sleep/> ;
     dtou:port app:port-c-sleep ;
-    dtou:purpose app:c-purpose-health, app:c-purpose-commercial .
+    dtou:purpose app:c-purpose-health ;
+    dtou:downstream app:c-downstream-commercial .
 
 # ── Output spec ───────────────────────────────────────────────────────────────
-# Aggregated dataset sent to external commercial service.
-# dtou:refinement deletes the personal-ownership attribute before forwarding
-# (simulating that the data is stripped of Alice's identity before commercial
-# use — but it is still prohibited by Alice's policy).
-
+# Aggregated dataset forwarded to the commercial research firm externally.
 app:c-output-aggregate a dtou:OutputSpec ;
     dtou:port app:port-c-out ;
-    dtou:from app:port-c-hr, app:port-c-steps, app:port-c-sleep ;
-    dtou:refinement [
-        a dtou:Delete ;
-        dtou:filter [
-            a dtou:Filter ;
-            dtou:name  vocab:health-data-personal ;
-            dtou:class dtou:personal ;
-            dtou:value vocab:nil
-        ]
-    ] .
+    dtou:from app:port-c-hr, app:port-c-steps, app:port-c-sleep .
 
 # ── App policy ───────────────────────────────────────────────────────────────
 app:HealthShareProPolicy a dtou:AppPolicy ;

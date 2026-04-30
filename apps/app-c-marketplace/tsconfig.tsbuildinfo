@@ -1,1 +1,1 @@
-{"root":["./src/main.ts","./src/policy.ts","./src/vite-env.d.ts","./src/vue-shim.d.ts","./src/app.vue","./src/components/conflictcard.vue","./src/components/policypanel.vue"],"version":"5.9.3"}
+{"root":["./src/main.ts","./src/policy.ts","./src/vite-env.d.ts","./src/vue-shim.d.ts","./src/app.vue","./src/components/conflictcard.vue","./src/components/policypanel.vue"],"errors":true,"version":"5.9.3"}
